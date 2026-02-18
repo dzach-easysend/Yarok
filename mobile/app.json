@@ -1,0 +1,58 @@
+{
+  "expo": {
+    "name": "ירוק",
+    "slug": "yarok",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "yarok",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0f1419"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.yarok.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "ירוק צריכה גישה למצלמה כדי לצלם תמונות וסרטונים של פסולת.",
+        "NSPhotoLibraryUsageDescription": "ירוק צריכה גישה לגלריה כדי לבחור תמונות וסרטונים.",
+        "NSLocationWhenInUseUsageDescription": "ירוק צריכה את המיקום שלך כדי לסמן היכן נמצאת הפסולת."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0f1419"
+      },
+      "package": "com.yarok.app",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "READ_MEDIA_IMAGES",
+        "READ_MEDIA_VIDEO"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "@maplibre/maplibre-react-native",
+      [
+        "expo-camera",
+        { "cameraPermission": "ירוק צריכה גישה למצלמה כדי לצלם תמונות וסרטונים של פסולת." }
+      ],
+      [
+        "expo-location",
+        { "locationWhenInUsePermission": "ירוק צריכה את המיקום שלך כדי לסמן היכן נמצאת הפסולת." }
+      ],
+      [
+        "expo-image-picker",
+        { "photosPermission": "ירוק צריכה גישה לתמונות כדי להוסיף תמונות וסרטונים לדיווח." }
+      ]
+    ]
+  }
+}

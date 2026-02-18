@@ -1,0 +1,44 @@
+# Env files (secrets)
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.eggs/
+
+# Node / Expo
+node_modules/
+
+# IDE / OS
+.idea/
+.vscode/
+.cursor/
+.DS_Store
+*.swp
+*.swo
+
+# Build / logs
+dist/
+build/
+*.log
+
+# Media uploads (local dev)
+uploads/
+
+# Test / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Expo
+.expo/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision

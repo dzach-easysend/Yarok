@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>ירוק — Mockup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0f1419;
+      --surface: #1a2332;
+      --surface-elevated: #243044;
+      --border: #2d3a4d;
+      --text: #e6edf3;
+      --text-muted: #8b9cb8;
+      --accent: #22c55e;
+      --accent-dim: #16a34a;
+      --danger: #ef4444;
+      --safe-width: 390px;
+      --safe-height: 844px;
+      --radius: 12px;
+      --radius-sm: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Heebo', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(135deg, #1a1f2e 0%, #0f1419 100%);
+      min-height: 100vh;
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px;
+      gap: 24px;
+    }
+
+    h1 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .phone {
+      width: var(--safe-width);
+      height: var(--safe-height);
+      max-width: 100%;
+      background: var(--bg);
+      border-radius: 40px;
+      padding: 12px;
+      box-shadow:
+        0 0 0 3px var(--border),
+        0 24px 48px rgba(0,0,0,0.5),
+        inset 0 0 0 1px rgba(255,255,255,0.04);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .phone-inner {
+      width: 100%;
+      height: 100%;
+      background: var(--surface);
+      border-radius: 32px;
+      overflow: hidden;
+      position: relative;
+      direction: rtl;
+    }
+
+    .screen {
+      position: absolute;
+      inset: 0;
+      display: none;
+      flex-direction: column;
+      background: var(--surface);
+      transition: opacity 0.2s ease;
+    }
+
+    .screen.active {
+      display: flex;
+    }
+
+    /* Status bar */
+    .status-bar {
+      height: 44px;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      flex-shrink: 0;
+    }
+
+    .status-bar .time { opacity: 0.9; }
+    .status-bar .icons { display: flex; gap: 4px; color: var(--text-muted); font-size: 12px; }
+
+    /* Tab bar */
+    .tab-bar {
+      height: 56px;
+      background: var(--bg);
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      padding-bottom: env(safe-area-inset-bottom, 0);
+      flex-shrink: 0;
+    }
+
+    .tab {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      padding: 8px;
+      color: var(--text-muted);
+      font-size: 10px;
+      cursor: pointer;
+      border: none;
+      background: none;
+      font-family: inherit;
+    }
+
+    .tab.active { color: var(--accent); }
+    .tab svg { width: 24px; height: 24px; }
+
+    /* Map Home */
+    .map-area {
+      flex: 1;
+      background: linear-gradient(180deg, #1e3a2f 0%, #1a2332 40%, #243044 100%);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .map-grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+
+    .map-pins {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .pin {
+      position: absolute;
+      width: 32px;
+      height: 32px;
+      background: var(--accent);
+      border-radius: 50% 50% 50% 0;
+      transform: rotate(-45deg);
+      box-shadow: 0 2px 8px rgba(34, 197, 94, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: auto;
+      cursor: pointer;
+    }
+
+    .pin::after {
+      content: '';
+      width: 10px;
+      height: 10px;
+      background: #fff;
+      border-radius: 50%;
+      transform: rotate(45deg);
+    }
+
+    .pin.pin-1 { left: 28%; top: 35%; }
+    .pin.pin-2 { left: 52%; top: 48%; }
+    .pin.pin-3 { left: 68%; top: 28%; }
+    .pin.pin-4 { left: 38%; top: 62%; }
+
+    .fab {
+      position: absolute;
+      bottom: 88px;
+      right: 20px;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      font-size: 28px;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(34, 197, 94, 0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+    }
+
+    .search-bar {
+      position: absolute;
+      top: 12px;
+      left: 16px;
+      right: 16px;
+      height: 44px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 8px;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .search-bar span:first-child { opacity: 0.7; }
+
+    /* Report Detail */
+    .detail-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 0 80px;
+    }
+
+    .media-strip {
+      height: 240px;
+      background: var(--surface-elevated);
+      display: flex;
+      gap: 8px;
+      padding: 16px;
+      overflow-x: auto;
+    }
+
+    .media-tile {
+      width: 160px;
+      height: 100%;
+      border-radius: var(--radius);
+      background: var(--border);
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+
+    .media-tile img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .media-tile.placeholder {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      font-size: 12px;
+    }
+
+    .detail-body {
+      padding: 16px;
+    }
+
+    .detail-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .detail-meta .status {
+      background: rgba(34, 197, 94, 0.2);
+      color: var(--accent);
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-weight: 500;
+    }
+
+    .detail-body p {
+      font-size: 15px;
+      line-height: 1.5;
+      color: var(--text);
+    }
+
+    .detail-map-mini {
+      margin-top: 16px;
+      height: 120px;
+      background: var(--surface-elevated);
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    /* Create Report */
+    .create-steps {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 16px 80px;
+    }
+
+    .step {
+      margin-bottom: 24px;
+    }
+
+    .step-label {
+      font-size: 11px;
+      letter-spacing: 0.02em;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      text-align: right;
+    }
+
+    .step-value {
+      font-size: 15px;
+      color: var(--text);
+      text-align: right;
+    }
+
+    .media-capture-box {
+      height: 180px;
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .media-capture-box .icon { font-size: 32px; opacity: 0.6; }
+
+    .media-capture-box.tappable { cursor: pointer; }
+    .media-capture-box.tappable:hover { border-color: var(--accent); background: rgba(34, 197, 94, 0.06); }
+    .media-count { font-size: 12px; color: var(--accent); margin-top: 4px; }
+
+    /* Media Picker screen — "tap to add" flow */
+    .media-picker-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 16px 100px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .media-source-title {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .media-source-btns {
+      display: flex;
+      gap: 12px;
+    }
+
+    .media-source-btn {
+      flex: 1;
+      min-height: 100px;
+      background: var(--surface-elevated);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      color: var(--text);
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: inherit;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    .media-source-btn:hover, .media-source-btn:active {
+      border-color: var(--accent);
+      background: rgba(34, 197, 94, 0.08);
+    }
+
+    .media-source-btn .ico { font-size: 28px; opacity: 0.9; }
+
+    .media-mode-toggle {
+      display: flex;
+      background: var(--surface-elevated);
+      border-radius: var(--radius-sm);
+      padding: 4px;
+      gap: 4px;
+    }
+
+    .media-mode-btn {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .media-mode-btn.active {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .media-preview-section {
+      margin-top: 8px;
+    }
+
+    .media-preview-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .media-preview-strip {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding: 4px 0;
+      min-height: 100px;
+    }
+
+    .media-preview-item {
+      width: 88px;
+      height: 88px;
+      border-radius: var(--radius-sm);
+      background: var(--border);
+      flex-shrink: 0;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      font-size: 11px;
+    }
+
+    .media-preview-item.photo-preview { background: linear-gradient(135deg, #2d3a4d 0%, #1a2332 100%); }
+    .media-preview-item.video-preview { background: linear-gradient(135deg, #1e3a2f 0%, #1a2332 100%); }
+
+    .media-preview-item .remove-btn {
+      position: absolute;
+      top: 4px;
+      left: 4px;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.6);
+      color: #fff;
+      border: none;
+      font-size: 14px;
+      line-height: 1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .media-preview-item .duration {
+      position: absolute;
+      bottom: 4px;
+      right: 4px;
+      font-size: 10px;
+      background: rgba(0,0,0,0.6);
+      padding: 2px 5px;
+      border-radius: 4px;
+    }
+
+    .media-add-slot {
+      width: 88px;
+      height: 88px;
+      border: 2px dashed var(--border);
+      border-radius: var(--radius-sm);
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      color: var(--text-muted);
+      font-size: 11px;
+      cursor: pointer;
+    }
+
+    .media-add-slot:hover { border-color: var(--accent); color: var(--accent); }
+    .media-add-slot .plus { font-size: 20px; }
+
+    .media-picker-hint {
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .media-picker-hint strong { color: var(--text); }
+
+    .btn-secondary {
+      padding: 14px 20px;
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: inherit;
+      width: 100%;
+    }
+
+    .btn-secondary:active { background: var(--border); }
+
+    textarea.step-input {
+      width: 100%;
+      min-height: 80px;
+      padding: 12px;
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 15px;
+      resize: none;
+    }
+
+    .btn-primary {
+      position: absolute;
+      bottom: 72px;
+      left: 16px;
+      right: 16px;
+      height: 48px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 24px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .btn-primary:active { background: var(--accent-dim); }
+
+    /* Settings */
+    .settings-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 16px 80px;
+    }
+
+    .settings-group {
+      margin-bottom: 24px;
+    }
+
+    .settings-group-title {
+      font-size: 12px;
+      letter-spacing: 0.02em;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      padding-inline-start: 4px;
+      text-align: right;
+    }
+
+    .settings-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      background: var(--surface-elevated);
+      border-radius: var(--radius-sm);
+      margin-bottom: 4px;
+      font-size: 15px;
+    }
+
+    .settings-row .muted { color: var(--text-muted); font-size: 13px; }
+
+    .toggle {
+      width: 50px;
+      height: 28px;
+      background: var(--border);
+      border-radius: 14px;
+      position: relative;
+      cursor: pointer;
+    }
+
+    .toggle.on {
+      background: var(--accent);
+    }
+
+    .toggle::after {
+      content: '';
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      background: #fff;
+      border-radius: 50%;
+      top: 2px;
+      left: 2px;
+      transition: transform 0.2s;
+    }
+
+    .toggle.on::after {
+      transform: translateX(22px);
+    }
+
+    /* My Reports list */
+    .list-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 16px 80px;
+    }
+
+    .report-card {
+      background: var(--surface-elevated);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 12px;
+      cursor: pointer;
+      border: 1px solid transparent;
+    }
+
+    .report-card:active { border-color: var(--accent); }
+
+    .report-card-thumb {
+      height: 100px;
+      background: var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      font-size: 12px;
+    }
+
+    .report-card-body {
+      padding: 12px;
+    }
+
+    .report-card-body .title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .report-card-body .meta {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* Nav header for non-map screens */
+    .nav-header {
+      height: 56px;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .nav-back {
+      background: none;
+      border: none;
+      color: var(--accent);
+      font-size: 16px;
+      cursor: pointer;
+      padding: 8px 0;
+      font-family: inherit;
+    }
+
+    .nav-title {
+      flex: 1;
+      text-align: center;
+      font-size: 17px;
+      font-weight: 600;
+    }
+
+    .nav-header .right { width: 60px; }
+
+    /* Legend below phone */
+    .legend {
+      max-width: var(--safe-width);
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .legend strong { color: var(--text); }
+  </style>
+</head>
+<body>
+  <h1>ירוק — Mockup</h1>
+
+  <div class="phone">
+    <div class="phone-inner">
+      <!-- Map Home -->
+      <div id="screen-map" class="screen active">
+        <div class="status-bar">
+          <span class="time">9:41</span>
+          <span class="icons">📶 🔋</span>
+        </div>
+        <div class="map-area">
+          <div class="map-grid"></div>
+          <div class="search-bar">
+            <span>🔍</span>
+            <span>חיפוש אזור או כתובת</span>
+          </div>
+          <div class="map-pins">
+            <div class="pin pin-1" title="דיווח 1" onclick="go('detail')"></div>
+            <div class="pin pin-2" title="דיווח 2" onclick="go('detail')"></div>
+            <div class="pin pin-3" title="דיווח 3" onclick="go('detail')"></div>
+            <div class="pin pin-4" title="דיווח 4" onclick="go('detail')"></div>
+          </div>
+          <button class="fab" onclick="go('create')" title="דיווח על פסולת">+</button>
+        </div>
+        <div class="tab-bar">
+          <button class="tab active" onclick="go('map')">🗺️ מפה</button>
+          <button class="tab" onclick="go('reports')">📋 הדיווחים שלי</button>
+          <button class="tab" onclick="go('settings')">⚙️ הגדרות</button>
+        </div>
+      </div>
+
+      <!-- Report Detail -->
+      <div id="screen-detail" class="screen">
+        <div class="status-bar">
+          <span class="time">9:41</span>
+          <span class="icons">📶 🔋</span>
+        </div>
+        <div class="nav-header">
+          <button class="nav-back" onclick="go('map')">→ חזרה</button>
+          <span class="nav-title">דיווח</span>
+          <span class="right"></span>
+        </div>
+        <div class="detail-content">
+          <div class="media-strip">
+            <div class="media-tile placeholder">תמונה 1</div>
+            <div class="media-tile placeholder">תמונה 2</div>
+          </div>
+          <div class="detail-body">
+            <div class="detail-meta">
+              <span class="status">פתוח</span>
+              <span>שביל ליד עין גדי · לפני שעתיים</span>
+            </div>
+            <p>בקבוקי פלסטיק ואריזות שנשארו לאורך השביל. נראה מהשביל הראשי.</p>
+            <div class="detail-map-mini">📍 מיקום על המפה</div>
+          </div>
+        </div>
+        <div class="tab-bar">
+          <button class="tab" onclick="go('map')">🗺️ מפה</button>
+          <button class="tab" onclick="go('reports')">📋 הדיווחים שלי</button>
+          <button class="tab" onclick="go('settings')">⚙️ הגדרות</button>
+        </div>
+      </div>
+
+      <!-- Create Report -->
+      <div id="screen-create" class="screen">
+        <div class="status-bar">
+          <span class="time">9:41</span>
+          <span class="icons">📶 🔋</span>
+        </div>
+        <div class="nav-header">
+          <button class="nav-back" onclick="go('map')">→ חזרה</button>
+          <span class="nav-title">דיווח חדש</span>
+          <span class="right"></span>
+        </div>
+        <div class="create-steps">
+          <div class="step">
+            <div class="step-label">מיקום (חובה)</div>
+            <div class="step-value">📍 <span dir="ltr">31.45° צפון, 35.39° מזרח</span> · נשמר</div>
+          </div>
+          <div class="step">
+            <div class="step-label">תמונות / וידאו (חובה)</div>
+            <div class="media-capture-box tappable" onclick="go('media-picker')">
+              <span class="icon">📷</span>
+              <span>הקש להוספת תמונה או סרטון</span>
+              <span class="media-count" id="create-media-count"></span>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-label">תיאור (אופציונלי)</div>
+            <textarea class="step-input" placeholder="מה מצאת?"></textarea>
+          </div>
+          <div class="step">
+            <div class="step-label">פרטי התקשרות (אופציונלי, למעקב)</div>
+            <textarea class="step-input" placeholder="אימייל או טלפון — או להשאיר אנונימי"></textarea>
+          </div>
+        </div>
+        <button class="btn-primary" onclick="go('map')">שליחת דיווח</button>
+        <div class="tab-bar">
+          <button class="tab" onclick="go('map')">🗺️ מפה</button>
+          <button class="tab" onclick="go('reports')">📋 הדיווחים שלי</button>
+          <button class="tab" onclick="go('settings')">⚙️ הגדרות</button>
+        </div>
+      </div>
+
+      <!-- Media Picker (tap to add photo/video) -->
+      <div id="screen-media-picker" class="screen">
+        <div class="status-bar">
+          <span class="time">9:41</span>
+          <span class="icons">📶 🔋</span>
+        </div>
+        <div class="nav-header">
+          <button class="nav-back" onclick="go('create')">→ חזרה</button>
+          <span class="nav-title">הוספת תמונות וסרטונים</span>
+          <span class="right"></span>
+        </div>
+        <div class="media-picker-content">
+          <div>
+            <div class="media-source-title">מאיפה להוסיף?</div>
+            <div class="media-source-btns">
+              <button type="button" class="media-source-btn">
+                <span class="ico">📷</span>
+                <span>מצלמה</span>
+                <span style="font-size: 12px; font-weight: 400; color: var(--text-muted);">צילום או הקלטה עכשיו</span>
+              </button>
+              <button type="button" class="media-source-btn">
+                <span class="ico">🖼️</span>
+                <span>גלריה</span>
+                <span style="font-size: 12px; font-weight: 400; color: var(--text-muted);">בחירה מהמכשיר</span>
+              </button>
+            </div>
+          </div>
+          <div>
+            <div class="media-source-title">סוג מדיה (במצלמה)</div>
+            <div class="media-mode-toggle">
+              <button type="button" class="media-mode-btn active" onclick="setMediaMode(this, 'photo')">תמונה</button>
+              <button type="button" class="media-mode-btn" onclick="setMediaMode(this, 'video')">וידאו (עד 10 שניות)</button>
+            </div>
+          </div>
+          <div class="media-preview-section">
+            <div class="media-preview-label">מה נוסף לדיווח (לפחות תמונה אחת)</div>
+            <div class="media-preview-strip">
+              <div class="media-preview-item photo-preview">
+                <button type="button" class="remove-btn" aria-label="הסר">×</button>
+                תמונה 1
+              </div>
+              <div class="media-preview-item video-preview">
+                <button type="button" class="remove-btn" aria-label="הסר">×</button>
+                <span class="duration">0:08</span>
+                וידאו
+              </div>
+              <div class="media-add-slot" onclick="go('media-picker')">
+                <span class="plus">+</span>
+                הוסף
+              </div>
+            </div>
+          </div>
+          <p class="media-picker-hint">
+            <strong>עד 5 קבצים.</strong> תמונה עד 10MB. וידאו עד 10 שניות ו־15MB.
+          </p>
+          <button type="button" class="btn-secondary" onclick="go('create')">סיום וחזרה לדיווח</button>
+        </div>
+      </div>
+
+      <!-- My Reports -->
+      <div id="screen-reports" class="screen">
+        <div class="status-bar">
+          <span class="time">9:41</span>
+          <span class="icons">📶 🔋</span>
+        </div>
+        <div class="nav-header">
+          <span class="right"></span>
+          <span class="nav-title">הדיווחים שלי</span>
+          <span class="right"></span>
+        </div>
+        <div class="list-content">
+          <div class="report-card" onclick="go('detail')">
+            <div class="report-card-thumb">📷</div>
+            <div class="report-card-body">
+              <div class="title">שביל ליד עין גדי</div>
+              <div class="meta">פתוח · לפני שעתיים</div>
+            </div>
+          </div>
+          <div class="report-card" onclick="go('detail')">
+            <div class="report-card-thumb">📷</div>
+            <div class="report-card-body">
+              <div class="title">שביל אופניים — ירושלים</div>
+              <div class="meta">נוקה · לפני 3 ימים</div>
+            </div>
+          </div>
+        </div>
+        <div class="tab-bar">
+          <button class="tab" onclick="go('map')">🗺️ מפה</button>
+          <button class="tab active" onclick="go('reports')">📋 הדיווחים שלי</button>
+          <button class="tab" onclick="go('settings')">⚙️ הגדרות</button>
+        </div>
+      </div>
+
+      <!-- Settings -->
+      <div id="screen-settings" class="screen">
+        <div class="status-bar">
+          <span class="time">9:41</span>
+          <span class="icons">📶 🔋</span>
+        </div>
+        <div class="nav-header">
+          <span class="right"></span>
+          <span class="nav-title">הגדרות</span>
+          <span class="right"></span>
+        </div>
+        <div class="settings-list">
+          <div class="settings-group">
+            <div class="settings-group-title">חשבון</div>
+            <div class="settings-row">
+              <span>פרופיל</span>
+              <span class="muted">לא מחובר</span>
+            </div>
+            <div class="settings-row">
+              <span>התחברות / הרשמה</span>
+              <span class="muted">אופציונלי</span>
+            </div>
+          </div>
+          <div class="settings-group">
+            <div class="settings-group-title">התראות</div>
+            <div class="settings-row">
+              <span>התראות push</span>
+              <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+            </div>
+            <div class="settings-row">
+              <span>רדיוס התראה</span>
+              <span class="muted">5 ק״מ</span>
+            </div>
+          </div>
+          <div class="settings-group">
+            <div class="settings-group-title">אודות</div>
+            <div class="settings-row">
+              <span>מדיניות פרטיות</span>
+            </div>
+            <div class="settings-row">
+              <span>גרסה</span>
+              <span class="muted">1.0.0 (MVP)</span>
+            </div>
+          </div>
+        </div>
+        <div class="tab-bar">
+          <button class="tab" onclick="go('map')">🗺️ מפה</button>
+          <button class="tab" onclick="go('reports')">📋 הדיווחים שלי</button>
+          <button class="tab active" onclick="go('settings')">⚙️ הגדרות</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <strong>אינטראקציה:</strong> השתמש בלשוניות למטה למעבר בין מפה, הדיווחים שלי והגדרות. הקש על <strong>+</strong> הירוק לפתיחת דיווח חדש. הקש על סיכה במפה או על כרטיס דיווח לפרטי דיווח. בהגדרות — הקש על «הוספת תמונות וסרטונים» מדיווח חדש כדי לראות את חוויית המצלמה/גלריה. המתג בהגדרות לחיץ.
+  </div>
+
+  <script>
+    function go(screenId) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+
+      const screenMap = {
+        map: 'screen-map',
+        detail: 'screen-detail',
+        create: 'screen-create',
+        'media-picker': 'screen-media-picker',
+        reports: 'screen-reports',
+        settings: 'screen-settings'
+      };
+
+      const id = screenMap[screenId];
+      if (id) document.getElementById(id).classList.add('active');
+
+      const tabIndex = { map: 0, reports: 1, settings: 2 }[screenId];
+      if (tabIndex !== undefined) {
+        const tabs = document.querySelectorAll('#screen-map .tab, #screen-create .tab, #screen-detail .tab, #screen-reports .tab, #screen-settings .tab');
+        const screen = document.querySelector('.screen.active');
+        if (screen) {
+          screen.querySelectorAll('.tab').forEach((t, i) => {
+            t.classList.toggle('active', i === tabIndex);
+          });
+        }
+      }
+    }
+
+    function setMediaMode(btn, mode) {
+      btn.closest('.media-mode-toggle').querySelectorAll('.media-mode-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+  </script>
+</body>
+</html>

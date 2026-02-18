@@ -1,0 +1,33 @@
+# Local dev: Postgres+PostGIS + optional API. From project root: docker compose up -d
+services:
+  yarok-db:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_USER: yarok
+      POSTGRES_PASSWORD: yarok
+      POSTGRES_DB: yarok
+    ports:
+      - "5432:5432"
+    volumes:
+      - yarok_pgdata:/var/lib/postgresql/data
+      - ./docker/postgres/01-init-postgis.sql:/docker-entrypoint-initdb.d/01-init-postgis.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U yarok -d yarok"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Optional: run API in Docker too. Requires: cd backend && pip install -e . first for alembic, or run migrations from host.
+  # yarok-api:
+  #   build: ./backend
+  #   ports:
+  #     - "8000:8000"
+  #   environment:
+  #     DATABASE_URL: postgresql+asyncpg://yarok:yarok@yarok-db:5432/yarok
+  #     REDIS_URL: redis://redis:6379/0
+  #   depends_on:
+  #     yarok-db:
+  #       condition: service_healthy
+
+volumes:
+  yarok_pgdata: {}

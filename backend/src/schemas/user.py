@@ -1,0 +1,52 @@
+"""User schemas."""
+
+from typing import Optional
+
+from pydantic import BaseModel, EmailStr
+
+
+class UserRegister(BaseModel):
+    """Registration payload."""
+
+    email: EmailStr
+    password: str
+    display_name: Optional[str] = None
+
+
+class UserLogin(BaseModel):
+    """Login payload."""
+
+    email: EmailStr
+    password: str
+
+
+class DeviceRegister(BaseModel):
+    """Anonymous device registration."""
+
+    device_id: str
+    push_token: Optional[str] = None
+
+
+class RefreshRequest(BaseModel):
+    """Refresh token payload."""
+
+    refresh_token: str
+
+
+class TokenPair(BaseModel):
+    """Access and refresh tokens."""
+
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+
+
+class UserResponse(BaseModel):
+    """Public user info."""
+
+    id: str
+    email: Optional[str]
+    display_name: Optional[str]
+    is_active: bool
+
+    model_config = {"from_attributes": True}
