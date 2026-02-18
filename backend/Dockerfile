@@ -1,4 +1,3 @@
-# Yarok API (FastAPI). For AWS: build and push to ECR. Local API: run on host with uvicorn (DB in Docker).
 FROM python:3.12-slim
 
 WORKDIR /app
@@ -16,6 +15,7 @@ COPY alembic/ ./alembic/
 
 RUN pip install .
 
-EXPOSE 8000
+COPY start.sh ./
+RUN chmod +x start.sh
 
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["./start.sh"]

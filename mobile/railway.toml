@@ -1,0 +1,5 @@
+[build]
+builder = "DOCKERFILE"
+
+[build.args]
+EXPO_PUBLIC_API_URL = "${{yarok-api.RAILWAY_PUBLIC_DOMAIN}}"
