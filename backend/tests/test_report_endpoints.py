@@ -147,6 +147,23 @@ class TestGetReport:
         assert resp.json()["media_count"] == 0
         assert resp.json()["media"] == []
 
+    @pytest.mark.asyncio
+    async def test_get_report_returns_invalid_status(self, client, mock_db):
+        """GET by ID returns report even when status is invalid (so detail screen works after update)."""
+        report = make_report(status="invalid")
+        row = make_report_row(report, lat=report.location.y, lng=report.location.x)
+        mock_db.execute = AsyncMock(
+            side_effect=[
+                make_execute_result(first_row=row),
+                make_execute_result(scalars_all=[]),
+            ]
+        )
+
+        resp = await client.get(f"/api/v1/reports/{report.id}")
+
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "invalid"
+
 
 # ---------------------------------------------------------------------------
 # PATCH /api/v1/reports/{report_id}

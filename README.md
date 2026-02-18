@@ -9,10 +9,17 @@ Mobile and web app for reporting garbage found while trekking or biking. Reporte
 
 ```
 yarok/
-  backend/         # FastAPI API + workers
-  mobile/          # Expo app (React Native) — iOS, Android, Web
-  mockups/         # HTML mockups (Hebrew UI)
-  docs/            # Setup and project docs
+  backend/             # FastAPI API + workers
+    Dockerfile         # Production container (Railway / Docker)
+    start.sh           # Entrypoint: runs migrations then uvicorn
+    railway.toml       # Railway build & deploy config
+  mobile/              # Expo app (React Native) — iOS, Android, Web
+    Dockerfile         # Web production build (Expo export + nginx)
+    metro.config.js    # Metro bundler config (web shims, minifier)
+    nginx.conf         # SPA fallback routing for web deploy
+    railway.toml       # Railway build config
+  mockups/             # HTML mockups (Hebrew UI)
+  docs/                # Setup and project docs
   docker-compose.yml   # Postgres + PostGIS (yarok-db)
 ```
 
@@ -150,13 +157,12 @@ The project deploys to Railway as three services within one project.
 | `S3_BUCKET` | `yarok-media` |
 | `S3_ACCESS_KEY` | (S3 access key) |
 | `S3_SECRET_KEY` | (S3 secret key) |
-| `REDIS_URL` | (optional -- add Railway Redis plugin and reference its URL) |
 
 **yarok-web** (build argument):
 
 | Variable | Value |
 |---|---|
-| `EXPO_PUBLIC_API_URL` | `${{yarok-api.RAILWAY_PUBLIC_DOMAIN}}` (set as a build arg, not runtime var) |
+| `EXPO_PUBLIC_API_URL` | `https://<yarok-api public domain>` (set as a build arg, not runtime var) |
 
 ### Notes
 
@@ -164,6 +170,8 @@ The project deploys to Railway as three services within one project.
 - **Media storage**: Railway containers are ephemeral. Configure S3 environment variables for persistent media uploads. Without S3, uploaded files are lost on redeploy.
 - **Health check**: The backend exposes `/health` and `railway.toml` configures Railway to use it.
 - **PostGIS data**: The database volume persists across redeploys as long as the service is not deleted.
+- **Port**: Railway injects `$PORT` at runtime. The backend `start.sh` reads it automatically (defaults to 8000). Set the public domain target port to match (check deploy logs for the actual port).
+- **Redis**: Not currently used in the codebase. No need to configure unless you add background jobs or server-side rate limiting later.
 
 ## License
 

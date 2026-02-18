@@ -16,7 +16,9 @@ import * as ImagePicker from "expo-image-picker";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createReport, uploadMedia } from "@/services/api";
 import ScreenHeader from "@/components/ScreenHeader";
-import { colors } from "@/constants/theme";
+import { MapView, type MapCenter } from "@/components/map";
+import LocationPickerOverlay from "@/components/LocationPickerOverlay";
+import { colors, radii } from "@/constants/theme";
 
 type MediaItem = { uri: string; file?: File };
 
@@ -25,6 +27,7 @@ export default function CreateReportScreen() {
   const queryClient = useQueryClient();
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [pickerVisible, setPickerVisible] = useState(false);
   const [description, setDescription] = useState("");
   const [contactInfo, setContactInfo] = useState("");
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
@@ -103,22 +106,65 @@ export default function CreateReportScreen() {
     });
   };
 
+  function handleAdjustLocation() {
+    setPickerVisible(true);
+  }
+
+  function handlePickerConfirm(picked: MapCenter) {
+    setLocation(picked);
+    setPickerVisible(false);
+  }
+
+  function handlePickerCancel() {
+    setPickerVisible(false);
+  }
+
   function renderLocationStatus(): React.ReactNode {
     if (locationError) {
-      return <Text style={styles.error}>{locationError}</Text>;
+      return (
+        <View style={styles.locationError}>
+          <Text style={styles.error}>{locationError}</Text>
+          <TouchableOpacity style={styles.adjustBtn} onPress={handleAdjustLocation}>
+            <Text style={styles.adjustBtnText}>בחר מיקום ידנית</Text>
+          </TouchableOpacity>
+        </View>
+      );
     }
     if (location) {
       return (
-        <Text style={styles.stepValue}>
-          📍{" "}
-          <Text style={styles.coords}>
-            {location.lat.toFixed(4)}° צפון, {location.lng.toFixed(4)}° מזרח
-          </Text>{" "}
-          · נשמר
-        </Text>
+        <TouchableOpacity
+          testID="mini-map-touch"
+          style={styles.miniMapTouchable}
+          onPress={handleAdjustLocation}
+          activeOpacity={0.9}
+        >
+          {/* Map fills the card */}
+          <MapView
+            key={`${location.lat},${location.lng}`}
+            center={location}
+            zoom={15}
+            markers={[]}
+            interactive={false}
+            style={styles.miniMap}
+          />
+          {/* Fixed centered pin overlay — no touches intercepted */}
+          <View style={[styles.miniPinOverlay, { pointerEvents: "none" }]}>
+            <View style={styles.miniPinCircle} />
+            <View style={styles.miniPinTip} />
+          </View>
+          {/* Edit hint badge */}
+          <View style={[styles.adjustBadge, { pointerEvents: "none" }]}>
+            <Text style={styles.adjustBadgeText}>✎ שנה מיקום</Text>
+          </View>
+        </TouchableOpacity>
       );
     }
-    return <ActivityIndicator size="small" color={colors.primary} />;
+    return (
+      <View style={styles.locationLoading}>
+        <ActivityIndicator size="small" color={colors.primary} />
+        <Text style={styles.loadingText}>מאתר מיקום…</Text>
+      </View>
+    );
   }
 
   return (
@@ -204,6 +250,14 @@ export default function CreateReportScreen() {
           <Text style={styles.submitText}>שליחת דיווח</Text>
         )}
       </TouchableOpacity>
+
+      {/* Location picker — rendered as overlay to avoid modal-on-modal nav issues */}
+      <LocationPickerOverlay
+        visible={pickerVisible}
+        initialCenter={location ?? { lat: 31.7683, lng: 35.2137 }}
+        onConfirm={handlePickerConfirm}
+        onCancel={handlePickerCancel}
+      />
     </View>
   );
 }
@@ -215,8 +269,82 @@ const styles = StyleSheet.create({
   step: { marginBottom: 24 },
   stepLabel: { fontSize: 11, color: colors.muted, marginBottom: 6, textAlign: "right" },
   stepValue: { fontSize: 15, color: colors.text, textAlign: "right" },
-  coords: { fontVariant: ["tabular-nums"] },
   error: { fontSize: 14, color: colors.error, textAlign: "right" },
+  locationError: { gap: 8 },
+  locationLoading: { flexDirection: "row", alignItems: "center", gap: 8 },
+  loadingText: { fontSize: 14, color: colors.muted, textAlign: "right" },
+  adjustBtn: {
+    alignSelf: "flex-end",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: radii.full,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  adjustBtnText: { fontSize: 13, color: colors.primary, fontWeight: "500" },
+  // Mini-map location preview
+  miniMapTouchable: {
+    height: 160,
+    borderRadius: 12,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: colors.border,
+    position: "relative",
+  },
+  miniMap: { flex: 1 },
+  miniPinOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
+    // Lift the group so the tip point sits at the map center
+    transform: [{ translateY: -11 }],
+  },
+  miniPinCircle: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: colors.primary,
+    borderWidth: 2,
+    borderColor: colors.white,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 6,
+  },
+  miniPinTip: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 4,
+    borderRightWidth: 4,
+    borderTopWidth: 6,
+    borderStyle: "solid",
+    borderLeftColor: "transparent",
+    borderRightColor: "transparent",
+    borderTopColor: colors.primary,
+    alignSelf: "center",
+    marginTop: -1,
+  },
+  adjustBadge: {
+    position: "absolute",
+    bottom: 10,
+    right: 10,
+    backgroundColor: "rgba(255,255,255,0.92)",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: radii.full,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  adjustBadgeText: {
+    fontSize: 12,
+    color: colors.text,
+    fontWeight: "500",
+  },
   mediaStripScroll: { marginHorizontal: -16 },
   mediaStrip: {
     flexDirection: "row",
@@ -279,7 +407,7 @@ const styles = StyleSheet.create({
   },
   submit: {
     position: "absolute",
-    bottom: 72,
+    bottom: 24,
     left: 16,
     right: 16,
     height: 48,

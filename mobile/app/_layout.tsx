@@ -24,19 +24,19 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <AuthProvider>
         <QueryClientProvider client={queryClient}>
-          <StatusBar style="light" />
+          <StatusBar style="dark" />
           <View style={{ flex: 1 }}>
-          {!backendOnline && !dismissed && (
-            <BackendBanner onDismiss={() => setDismissed(true)} />
-          )}
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="report/create" options={{ presentation: "modal" }} />
-            <Stack.Screen name="report/[id]" />
-            <Stack.Screen name="auth/login" />
-            <Stack.Screen name="auth/register" />
-          </Stack>
-        </View>
+            {!backendOnline && !dismissed && (
+              <BackendBanner onDismiss={() => setDismissed(true)} />
+            )}
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="(tabs)" />
+              <Stack.Screen name="report/create" options={{ presentation: "modal" }} />
+              <Stack.Screen name="report/[id]" />
+              <Stack.Screen name="auth/login" />
+              <Stack.Screen name="auth/register" />
+            </Stack>
+          </View>
         </QueryClientProvider>
       </AuthProvider>
     </SafeAreaProvider>

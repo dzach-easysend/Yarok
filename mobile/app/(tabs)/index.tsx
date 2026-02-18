@@ -3,7 +3,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   Text,
-  TextInput,
   Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
@@ -12,6 +11,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { getReports, type ReportListItem } from "@/services/api";
 import { geocodeSearch, GeocodingError } from "@/services/geocoding";
 import { MapView, type MapCenter, type MapMarker } from "@/components/map";
+import MapSearchBar from "@/components/MapSearchBar";
 import { colors } from "@/constants/theme";
 
 const DEFAULT_CENTER: MapCenter = { lat: 31.7683, lng: 35.2137 };
@@ -107,35 +107,22 @@ export default function MapScreen() {
         flyTo={flyTo}
       />
       {/* Search bar overlay — RTL: clear (×) on left, input on right */}
-      <View style={styles.searchBar}>
-        {searchQuery.length > 0 && (
-          <TouchableOpacity
-            testID="map-search-clear"
-            style={styles.searchClear}
-            onPress={() => {
-              setSearchQuery("");
-              setSearchPin(null);
-            }}
-            accessibilityLabel="נקה חיפוש"
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <Text style={styles.searchClearText}>×</Text>
-          </TouchableOpacity>
-        )}
-        <TextInput
-          testID="map-search-input"
-          style={styles.searchInput}
-          placeholder="חיפוש אזור או כתובת"
-          placeholderTextColor={colors.muted}
-          value={searchQuery}
-          onChangeText={(text) => {
-            setSearchQuery(text);
-            if (searchPin) setSearchPin(null);
-          }}
-          onSubmitEditing={handleSearch}
-          returnKeyType="search"
-        />
-      </View>
+      <MapSearchBar
+        style={styles.searchBar}
+        value={searchQuery}
+        onChangeText={(text) => {
+          setSearchQuery(text);
+          if (searchPin) setSearchPin(null);
+        }}
+        onSubmit={handleSearch}
+        onClear={() => {
+          setSearchQuery("");
+          setSearchPin(null);
+        }}
+        placeholder="חיפוש אזור או כתובת"
+        testID="map-search-input"
+        clearTestID="map-search-clear"
+      />
       <TouchableOpacity
         testID="fab-create"
         style={styles.fab}
@@ -164,48 +151,11 @@ const styles = StyleSheet.create({
     top: 12,
     left: 16,
     right: 16,
-    height: 44,
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.bg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 22,
-    paddingLeft: 16,
-    paddingRight: 12,
     zIndex: 1000,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 14,
-    color: colors.text,
-    textAlign: "right",
-    writingDirection: "rtl",
-    paddingVertical: 10,
-    paddingLeft: 8,
-    paddingRight: 0,
-    backgroundColor: "transparent",
-    borderWidth: 0,
-    ...(Platform.OS === "web" && {
-      outlineStyle: "none",
-    } as { outlineStyle?: "none" }),
-  },
-  searchClear: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 4,
-  },
-  searchClearText: {
-    fontSize: 22,
-    color: colors.muted,
-    lineHeight: 24,
   },
   fab: {
     position: "absolute",
-    bottom: 88,
+    bottom: 20,
     right: 20,
     width: 56,
     height: 56,
@@ -222,16 +172,21 @@ const styles = StyleSheet.create({
   fabText: { fontSize: 28, color: colors.white, lineHeight: 32 },
   toast: {
     position: "absolute",
-    bottom: 100,
+    bottom: 84,
     left: 24,
     right: 24,
     paddingVertical: 12,
     paddingHorizontal: 16,
-    backgroundColor: colors.bg,
+    backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 8,
     zIndex: 1001,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
   toastHidden: {
     opacity: 0,

@@ -33,8 +33,20 @@ export default function TabLayout() {
       screenOptions={({ route }) => ({
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.muted,
-        tabBarStyle: { backgroundColor: colors.tabBar, borderTopColor: colors.border },
-        headerStyle: { backgroundColor: colors.bg, borderBottomColor: colors.border },
+        tabBarStyle: {
+          backgroundColor: colors.tabBar,
+          borderTopColor: colors.border,
+          borderTopWidth: 1,
+          paddingBottom: 8,
+          paddingTop: 6,
+          height: 68,
+        },
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: "500",
+          marginTop: 2,
+        },
+        headerStyle: { backgroundColor: colors.surface, borderBottomColor: colors.border, borderBottomWidth: 1 },
         headerTintColor: colors.text,
         headerTitle: () => <HeaderTitleRtl title={TAB_TITLES[route.name] ?? route.name} />,
         headerTitleContainerStyle: {

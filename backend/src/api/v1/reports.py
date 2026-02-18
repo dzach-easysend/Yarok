@@ -1,6 +1,6 @@
 """Reports CRUD and geo-query endpoints."""
 
-from typing import Optional
+from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from geoalchemy2 import WKTElement
@@ -17,18 +17,16 @@ router = APIRouter(prefix="/reports", tags=["reports"])
 
 def _extract_coords(row) -> tuple[float, float]:
     """Extract (lat, lng) from a SQLAlchemy row with labeled ST_Y/ST_X columns."""
-    lat = float(row.lat) if getattr(row, "lat", None) is not None else 0.0
-    lng = float(row.lng) if getattr(row, "lng", None) is not None else 0.0
-    return lat, lng
+    return float(row.lat or 0), float(row.lng or 0)
 
 
 def _report_to_response(
     r: Report,
     *,
     media_count: int = 0,
-    media_items: Optional[list[MediaItem]] = None,
-    lat: Optional[float] = None,
-    lng: Optional[float] = None,
+    media_items: list[MediaItem] | None = None,
+    lat: float | None = None,
+    lng: float | None = None,
 ) -> ReportResponse:
     """Build API response from a report row.
 
@@ -61,8 +59,8 @@ def _report_to_response(
 async def create_report(
     body: ReportCreate,
     db: AsyncSession = Depends(get_db),
-    user_id: Optional[str] = None,
-    device_id: Optional[str] = None,
+    user_id: str | None = None,
+    device_id: str | None = None,
 ) -> ReportResponse:
     """Create a new report (user_id or device_id from JWT in real impl)."""
     point = WKTElement(f"POINT({body.lng} {body.lat})", srid=4326)
@@ -89,7 +87,7 @@ async def list_reports(
     radius_km: float = Query(10, ge=0.1, le=500),
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
-    status_filter: Optional[str] = Query(None, alias="status"),
+    status_filter: str | None = Query(None, alias="status"),
 ) -> list[ReportResponse]:
     """List reports within radius of (lat, lng) using PostGIS ST_DWithin."""
     # Approximate: 1 degree ~ 111 km; ST_DWithin in degree units
@@ -132,7 +130,7 @@ async def get_report(
     report_id: str,
     db: AsyncSession = Depends(get_db),
 ) -> ReportResponse:
-    """Get a single report by ID, including media URLs."""
+    """Get a single report by ID, including media URLs. Returns report even if status is invalid."""
     stmt = (
         select(
             Report,
@@ -140,7 +138,6 @@ async def get_report(
             func.ST_X(Report.location).label("lng"),
         )
         .where(Report.id == report_id)
-        .where(Report.status != "invalid")
     )
     result = await db.execute(stmt)
     row = result.first()

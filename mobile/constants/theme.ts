@@ -6,21 +6,21 @@
 
 export const colors = {
   /** Main background (screens) */
-  bg: "#1a2332",
+  bg: "#f5f7fa",
   /** Elevated surface (cards, inputs, rows) */
-  surface: "#243044",
+  surface: "#ffffff",
   /** Borders, dividers, muted backgrounds */
-  border: "#2d3a4d",
+  border: "#e2e8f0",
   /** Primary accent (green) */
-  primary: "#22c55e",
-  /** Body text on dark backgrounds */
-  text: "#e6edf3",
+  primary: "#16a34a",
+  /** Body text on light backgrounds */
+  text: "#0f172a",
   /** Secondary / muted text */
-  muted: "#8b9cb8",
+  muted: "#64748b",
   /** Tab-bar background */
-  tabBar: "#0f1419",
+  tabBar: "#ffffff",
   /** Error / destructive */
-  error: "#ef4444",
+  error: "#dc2626",
   /** Pure white (buttons, thumbs) */
   white: "#fff",
 } as const;

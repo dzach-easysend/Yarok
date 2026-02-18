@@ -21,14 +21,22 @@ import { colors } from "@/constants/theme";
 
 const API_BASE = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8000";
 
+function getResponseStatus(err: unknown): number | undefined {
+  return (err as { response?: { status?: number } })?.response?.status;
+}
+
 export default function ReportDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { data: report, isLoading } = useQuery({
+  const { data: report, isLoading, isError, error } = useQuery({
     queryKey: ["report", id],
     queryFn: () => getReport(id!),
     enabled: !!id,
+    retry: (failureCount, err) => {
+      if (getResponseStatus(err) === 404) return false;
+      return failureCount < 3;
+    },
   });
 
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
@@ -51,7 +59,7 @@ export default function ReportDetailScreen() {
     },
   });
 
-  const handleDelete = () => {
+  function handleDelete() {
     if (Platform.OS === "web") {
       if (typeof window !== "undefined" && window.confirm("מחיקת דיווח\nלמחוק דיווח זה?")) {
         deleteMutation.mutate();
@@ -66,14 +74,45 @@ export default function ReportDetailScreen() {
         onPress: () => deleteMutation.mutate(),
       },
     ]);
-  };
+  }
 
-  if (isLoading || !report) {
+  if (isLoading && !report) {
     return (
       <View style={styles.container}>
         <ScreenHeader title="דיווח" />
         <View style={styles.centered}>
-          <Text style={styles.muted}>{isLoading ? "טוען..." : "לא נמצא"}</Text>
+          <Text style={styles.muted}>טוען...</Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (isError) {
+    const is404 = getResponseStatus(error) === 404;
+    return (
+      <View style={styles.container}>
+        <ScreenHeader title="דיווח" />
+        <View style={styles.centered}>
+          <Text style={styles.muted}>
+            {is404 ? "דיווח לא נמצא" : "שגיאה בטעינת הדיווח"}
+          </Text>
+          <TouchableOpacity
+            style={[styles.updateBtn, { marginTop: 16 }]}
+            onPress={() => router.back()}
+          >
+            <Text style={styles.updateBtnText}>חזרה</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
+  if (!report) {
+    return (
+      <View style={styles.container}>
+        <ScreenHeader title="דיווח" />
+        <View style={styles.centered}>
+          <Text style={styles.muted}>לא נמצא</Text>
         </View>
       </View>
     );
