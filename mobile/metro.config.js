@@ -7,7 +7,8 @@ const originalResolveRequest = config.resolver.resolveRequest;
 config.resolver.resolveRequest = (context, moduleName, platform) => {
   if (
     platform === "web" &&
-    moduleName === "@maplibre/maplibre-react-native"
+    (moduleName === "@maplibre/maplibre-react-native" ||
+      moduleName.startsWith("@maplibre/maplibre-react-native/"))
   ) {
     return { type: "empty" };
   }
