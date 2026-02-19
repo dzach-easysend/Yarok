@@ -9,8 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
-from src.api.v1 import auth, media, reports
-from src.api.v1 import geocode as geocode_router
+from src.api.v1 import auth, geocode, media, reports
 from src.config import settings
 from src.middleware.security import limiter, setup_middleware
 
@@ -34,9 +33,8 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(reports.router, prefix="/api/v1")
 app.include_router(media.router, prefix="/api/v1")
-app.include_router(geocode_router.router, prefix="/api/v1")
+app.include_router(geocode.router, prefix="/api/v1")
 
-# Mount local media uploads as static files
 _upload_dir = Path(settings.media_upload_dir)
 if not _upload_dir.is_absolute():
     _upload_dir = Path(__file__).resolve().parents[1] / _upload_dir

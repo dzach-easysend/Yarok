@@ -34,9 +34,6 @@ export default function LocationPickerOverlay({
   onConfirm,
   onCancel,
 }: Props) {
-  const [mapCenter, setMapCenter] = useState<MapCenter>(initialCenter);
-  // Ref mirrors state so handleConfirm always reads the latest center,
-  // even if the user taps confirm before the pan state update has re-rendered.
   const mapCenterRef = useRef<MapCenter>(initialCenter);
 
   const [flyTo, setFlyTo] = useState<{ center: MapCenter; zoom: number } | null>(null);
@@ -45,7 +42,6 @@ export default function LocationPickerOverlay({
 
   const handleMoveEnd = useCallback((center: MapCenter) => {
     mapCenterRef.current = center;
-    setMapCenter(center);
   }, []);
 
   const handleConfirm = useCallback(() => {
@@ -60,7 +56,6 @@ export default function LocationPickerOverlay({
       const result = await geocodeSearch(q);
       if (result) {
         mapCenterRef.current = result;
-        setMapCenter(result);
         setFlyTo({ center: result, zoom: 16 });
       }
     } catch {
@@ -74,7 +69,6 @@ export default function LocationPickerOverlay({
 
   return (
     <View style={styles.root}>
-      {/* Map fills the overlay */}
       <MapView
         center={initialCenter}
         zoom={15}
@@ -84,7 +78,6 @@ export default function LocationPickerOverlay({
         style={styles.map}
       />
 
-      {/* Top bar: search + cancel */}
       <View style={styles.topBar}>
         <View style={styles.searchRow}>
           <MapSearchBar
@@ -105,7 +98,6 @@ export default function LocationPickerOverlay({
         </View>
       </View>
 
-      {/* Fixed centered pin — pointerEvents none so map panning works */}
       <View style={[styles.pinOverlay, { pointerEvents: "none" }]}>
         <View style={[styles.pinContainer, { transform: [{ translateY: -PIN_LIFT }] }]}>
           <View style={styles.pinCircle} />
@@ -114,7 +106,6 @@ export default function LocationPickerOverlay({
         </View>
       </View>
 
-      {/* Bottom bar: instruction + confirm */}
       <View style={styles.bottomBar}>
         <Text style={styles.instruction}>
           גרור את המפה כדי למקם את הסיכה על הפסולת

@@ -52,18 +52,12 @@ async def upload_media(
     file: UploadFile,
     db: AsyncSession = Depends(get_db),
 ) -> dict:
-    """Upload a media file (photo/video) for a report.
-
-    Stores the file locally in the uploads directory and creates a
-    Media record in the database.
-    """
-    # Verify report exists
+    """Upload a media file (photo/video) for a report."""
     result = await db.execute(select(Report).where(Report.id == report_id))
     report = result.scalar_one_or_none()
     if not report:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")
 
-    # Validate content type
     content_type = file.content_type or ""
     if content_type not in ALLOWED_CONTENT_TYPES:
         raise HTTPException(
@@ -71,7 +65,6 @@ async def upload_media(
             detail=f"Unsupported file type: {content_type}",
         )
 
-    # Read file data (with size limit)
     data = await file.read()
     if len(data) > MAX_FILE_SIZE:
         raise HTTPException(
@@ -79,14 +72,12 @@ async def upload_media(
             detail="File too large (max 20 MB)",
         )
 
-    # Generate unique filename
     ext = _extension_for(content_type)
     filename = f"{uuid.uuid4().hex}{ext}"
     upload_dir = _get_upload_dir()
     filepath = upload_dir / filename
     filepath.write_bytes(data)
 
-    # Create Media record
     media = Media(
         report_id=report_id,
         media_type=_media_type_from_content(content_type),
@@ -112,7 +103,6 @@ async def list_media(
     db: AsyncSession = Depends(get_db),
 ) -> list[dict]:
     """List all media files for a report."""
-    # Verify report exists
     result = await db.execute(select(Report).where(Report.id == report_id))
     report = result.scalar_one_or_none()
     if not report:

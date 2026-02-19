@@ -124,7 +124,6 @@ export default function ReportDetailScreen() {
     <View style={styles.container} testID="screen-detail">
       <ScreenHeader title="דיווח" />
       <ScrollView testID="detail-content" style={styles.scroll} contentContainerStyle={styles.scrollContent}>
-        {/* Media strip */}
         {report.media && report.media.length > 0 ? (
           <FlatList
             data={report.media}
@@ -150,7 +149,6 @@ export default function ReportDetailScreen() {
         )}
 
         <View style={styles.body}>
-          {/* Status + meta */}
           <View style={styles.meta}>
             <View testID="status-badge" style={styles.statusBadge}>
               <Text style={styles.statusText}>{statusLabel(report.status)}</Text>
@@ -160,12 +158,10 @@ export default function ReportDetailScreen() {
             </Text>
           </View>
 
-          {/* Description */}
           {report.description ? (
             <Text testID="detail-description" style={styles.description}>{report.description}</Text>
           ) : null}
 
-          {/* Mini map */}
           <MapView
             center={{ lat: report.lat, lng: report.lng }}
             zoom={15}
@@ -174,7 +170,6 @@ export default function ReportDetailScreen() {
             style={styles.miniMap}
           />
 
-          {/* Status update */}
           <Text style={styles.sectionLabel}>עדכון סטטוס</Text>
           <View style={styles.statusRow}>
             {STATUS_OPTIONS.map((opt) => (
@@ -211,7 +206,6 @@ export default function ReportDetailScreen() {
             </TouchableOpacity>
           )}
 
-          {/* Delete */}
           <TouchableOpacity
             testID="btn-delete-report"
             style={styles.deleteBtn}

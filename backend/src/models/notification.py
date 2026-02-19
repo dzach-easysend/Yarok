@@ -1,5 +1,6 @@
 """Notification subscription and log."""
 
+from datetime import datetime
 from typing import Any, Optional
 
 from geoalchemy2 import Geometry
@@ -57,7 +58,7 @@ class NotificationLog(Base, TimestampMixin):
     )
     channel: Mapped[str] = mapped_column(String(16), nullable=False)  # push, email
     status: Mapped[str] = mapped_column(String(16), default="sent")  # sent, failed, read
-    sent_at: Mapped[Optional[Any]] = mapped_column(
+    sent_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
         nullable=True,

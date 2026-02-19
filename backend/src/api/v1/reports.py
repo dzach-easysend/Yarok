@@ -1,7 +1,5 @@
 """Reports CRUD and geo-query endpoints."""
 
-from __future__ import annotations
-
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -32,11 +30,8 @@ def _report_to_response(
 ) -> ReportResponse:
     """Build API response from a report row.
 
-    Important: GeoAlchemy2 typically returns PostGIS geometries as WKBElement,
-    which does NOT expose `.x/.y`. Tests use a mock object that *does*.
-
-    In production, lat/lng should be provided explicitly (via ST_X/ST_Y in the
-    SELECT). For test mocks and non-PostGIS cases, we fall back to `.x/.y`.
+    When lat/lng are not provided explicitly (via ST_X/ST_Y in the SELECT),
+    falls back to geometry .x/.y attributes (used by test mocks).
     """
     if lat is None or lng is None:
         geom = r.location
@@ -77,7 +72,6 @@ async def create_report(
     db.add(report)
     await db.flush()
     await db.refresh(report)
-    # Return the coordinates we just received (avoid geometry extraction issues).
     return _report_to_response(report, lat=body.lat, lng=body.lng)
 
 
@@ -92,8 +86,7 @@ async def list_reports(
     status_filter: Optional[str] = Query(None, alias="status"),
 ) -> list[ReportResponse]:
     """List reports within radius of (lat, lng) using PostGIS ST_DWithin."""
-    # Approximate: 1 degree ~ 111 km; ST_DWithin in degree units
-    radius_deg = radius_km / 111.0
+    radius_deg = radius_km / 111.0  # ~1 degree = 111 km
     point_wkt = WKTElement(f"POINT({lng} {lat})", srid=4326)
     stmt = (
         select(
@@ -133,14 +126,11 @@ async def get_report(
     db: AsyncSession = Depends(get_db),
 ) -> ReportResponse:
     """Get a single report by ID, including media URLs. Returns report even if status is invalid."""
-    stmt = (
-        select(
-            Report,
-            func.ST_Y(Report.location).label("lat"),
-            func.ST_X(Report.location).label("lng"),
-        )
-        .where(Report.id == report_id)
-    )
+    stmt = select(
+        Report,
+        func.ST_Y(Report.location).label("lat"),
+        func.ST_X(Report.location).label("lng"),
+    ).where(Report.id == report_id)
     result = await db.execute(stmt)
     row = result.first()
     if not row:
@@ -148,7 +138,6 @@ async def get_report(
     report: Report = row[0]
     row_lat, row_lng = _extract_coords(row)
 
-    # Fetch media items for this report
     media_stmt = select(Media).where(Media.report_id == report.id).order_by(Media.created_at)
     media_result = await db.execute(media_stmt)
     media_rows = media_result.scalars().all()

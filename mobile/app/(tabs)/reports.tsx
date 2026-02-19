@@ -11,35 +11,32 @@ import { useRouter } from "expo-router";
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import * as Location from "expo-location";
-import { getReports } from "@/services/api";
+import { getReports, type ReportListItem } from "@/services/api";
 import { statusLabel } from "@/utils/statusLabel";
 import { colors, spacing, radii } from "@/constants/theme";
 import DragScrollView from "@/components/DragScrollView";
+import { MapView } from "@/components/map";
 
 const DEFAULT_CENTER = { lat: 31.7683, lng: 35.2137 };
 
 function EmptyState({ onCreatePress }: { onCreatePress: () => void }) {
   return (
     <View style={emptyStyles.root} testID="empty-state">
-      {/* Illustration */}
       <View style={emptyStyles.illustrationWrap}>
         <View style={emptyStyles.illustrationBg}>
           <Text style={emptyStyles.illustrationEmoji}>🌿</Text>
         </View>
-        {/* Decorative dots */}
         <View style={[emptyStyles.dot, emptyStyles.dotTL]} />
         <View style={[emptyStyles.dot, emptyStyles.dotBR]} />
         <View style={[emptyStyles.dotSm, emptyStyles.dotTR]} />
       </View>
 
-      {/* Copy */}
       <Text style={emptyStyles.headline}>אין דיווחים עדיין</Text>
       <Text style={emptyStyles.subtext}>
         ראית פסולת בשביל או בשטח פתוח?{"\n"}
         צלם ושלח את הדיווח הראשון שלך — זה לוקח שניות.
       </Text>
 
-      {/* CTA */}
       <TouchableOpacity
         testID="empty-state-cta"
         style={emptyStyles.cta}
@@ -50,19 +47,33 @@ function EmptyState({ onCreatePress }: { onCreatePress: () => void }) {
         <Text style={emptyStyles.ctaText}>צור דיווח ראשון</Text>
       </TouchableOpacity>
 
-      {/* Hint */}
       <Text style={emptyStyles.hint}>אפשר גם מהכפתור הירוק למטה</Text>
     </View>
   );
 }
 
-function ReportCard({
-  item,
-  onPress,
-}: {
-  item: { id: string; address?: string | null; status: string; media_count: number };
-  onPress: () => void;
-}) {
+const SNIPPET_MAX_LENGTH = 150;
+
+function truncateText(text: string | null | undefined, maxLength: number): string | null {
+  if (!text || text.length === 0) return null;
+  if (text.length <= maxLength) return text;
+  return `${text.slice(0, maxLength)}\u2026`;
+}
+
+function formatCreationDate(isoString: string): string {
+  const date = new Date(isoString);
+  return date.toLocaleString("he-IL", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function ReportCard({ item, onPress }: { item: ReportListItem; onPress: () => void }) {
+  const snippet = truncateText(item.description, SNIPPET_MAX_LENGTH);
+
   return (
     <TouchableOpacity
       testID="report-card"
@@ -70,14 +81,28 @@ function ReportCard({
       onPress={onPress}
       activeOpacity={0.7}
     >
-      <View style={styles.thumb} />
+      <View style={[styles.thumb, { pointerEvents: "none" }]}>
+        <MapView
+          key={`${item.id}-${item.lat}-${item.lng}`}
+          center={{ lat: item.lat, lng: item.lng }}
+          zoom={13}
+          markers={[{ id: item.id, lat: item.lat, lng: item.lng }]}
+          interactive={false}
+          style={StyleSheet.absoluteFill}
+        />
+      </View>
       <View style={styles.cardBody}>
-        <Text testID="report-card-desc" style={styles.title}>
-          {item.address || "ללא כתובת"}
-        </Text>
-        <Text style={styles.meta}>
-          {statusLabel(item.status)} · {item.media_count} תמונות
-        </Text>
+        {snippet ? (
+          <Text testID="report-card-desc" style={styles.snippet}>
+            {snippet}
+          </Text>
+        ) : null}
+        <View style={styles.metaContainer}>
+          <View style={styles.statusBadge}>
+            <Text style={styles.statusText}>{statusLabel(item.status)}</Text>
+          </View>
+          <Text style={styles.meta}>{formatCreationDate(item.created_at)}</Text>
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -176,9 +201,39 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "transparent",
   },
-  thumb: { height: 100, backgroundColor: colors.border },
-  cardBody: { padding: 12 },
-  title: { fontSize: 14, fontWeight: "600", color: colors.text, marginBottom: 4, textAlign: "right" },
+  thumb: { height: 120, overflow: "hidden" },
+  cardBody: {
+    padding: 12,
+    alignItems: "flex-end",
+    direction: "rtl",
+  },
+  snippet: {
+    fontSize: 14,
+    color: colors.text,
+    lineHeight: 20,
+    marginBottom: 8,
+    textAlign: "right",
+    alignSelf: "stretch",
+    writingDirection: "rtl",
+  },
+  metaContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flexWrap: "wrap",
+  },
+  statusBadge: {
+    backgroundColor: "rgba(34, 197, 94, 0.2)",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: radii.full,
+  },
+  statusText: {
+    color: colors.primary,
+    fontWeight: "500",
+    fontSize: 12,
+    textAlign: "right",
+  },
   meta: { fontSize: 12, color: colors.muted, textAlign: "right" },
   fab: {
     position: "absolute",

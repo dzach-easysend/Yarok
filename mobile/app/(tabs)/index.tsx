@@ -106,7 +106,6 @@ export default function MapScreen() {
         onMoveEnd={setCenter}
         flyTo={flyTo}
       />
-      {/* Search bar overlay — RTL: clear (×) on left, input on right */}
       <MapSearchBar
         style={styles.searchBar}
         value={searchQuery}

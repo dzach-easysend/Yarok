@@ -6,8 +6,10 @@
 import { useRef, useCallback, useEffect } from "react";
 import { View, StyleSheet } from "react-native";
 import MapLibreGL from "@maplibre/maplibre-react-native";
+import * as Location from "expo-location";
 import type { MapViewProps } from "./types";
 import { OSM_MAP_STYLE } from "./types";
+import { MapControls } from "./MapControls";
 
 MapLibreGL.setAccessToken(null);
 
@@ -46,6 +48,49 @@ export default function MapView({
     }
   }, [onMoveEnd]);
 
+  const handleZoomIn = useCallback(async () => {
+    if (!mapRef.current) return;
+    try {
+      const currentZoom = await mapRef.current.getZoom();
+      cameraRef.current?.setCamera({
+        zoomLevel: currentZoom + 1,
+        animationDuration: 300,
+      });
+    } catch {
+      // Camera may not be ready
+    }
+  }, []);
+
+  const handleZoomOut = useCallback(async () => {
+    if (!mapRef.current) return;
+    try {
+      const currentZoom = await mapRef.current.getZoom();
+      cameraRef.current?.setCamera({
+        zoomLevel: currentZoom - 1,
+        animationDuration: 300,
+      });
+    } catch {
+      // Camera may not be ready
+    }
+  }, []);
+
+  const handleLocateMe = useCallback(async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        return;
+      }
+      const location = await Location.getCurrentPositionAsync({});
+      cameraRef.current?.setCamera({
+        centerCoordinate: [location.coords.longitude, location.coords.latitude],
+        zoomLevel: 15,
+        animationDuration: 1000,
+      });
+    } catch (err) {
+      console.warn("Error getting location:", err);
+    }
+  }, []);
+
   return (
     <View style={[styles.container, style]}>
       <MapLibreGL.MapView
@@ -59,6 +104,7 @@ export default function MapView({
         onRegionDidChange={handleRegionDidChange}
         attributionEnabled={false}
         logoEnabled={false}
+        showsUserLocation={interactive}
       >
         <MapLibreGL.Camera
           ref={cameraRef}
@@ -83,6 +129,13 @@ export default function MapView({
           </MapLibreGL.PointAnnotation>
         ))}
       </MapLibreGL.MapView>
+      {interactive && (
+        <MapControls
+          onZoomIn={handleZoomIn}
+          onZoomOut={handleZoomOut}
+          onLocateMe={handleLocateMe}
+        />
+      )}
     </View>
   );
 }

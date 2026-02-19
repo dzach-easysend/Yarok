@@ -46,11 +46,12 @@ export default function MapSearchBar({
 }: Props) {
   const showClear = !loading && value.length > 0 && !!onClear;
 
-  return (
-    <View style={[styles.container, style]}>
-      {loading ? (
-        <ActivityIndicator size="small" color={colors.primary} style={styles.leftSlot} />
-      ) : showClear ? (
+  function renderLeftSlot(): React.ReactNode {
+    if (loading) {
+      return <ActivityIndicator size="small" color={colors.primary} style={styles.leftSlot} />;
+    }
+    if (showClear) {
+      return (
         <TouchableOpacity
           testID={clearTestID ?? (testID ? `${testID}-clear` : undefined)}
           style={styles.clearBtn}
@@ -60,7 +61,14 @@ export default function MapSearchBar({
         >
           <Text style={styles.clearText}>×</Text>
         </TouchableOpacity>
-      ) : null}
+      );
+    }
+    return null;
+  }
+
+  return (
+    <View style={[styles.container, style]}>
+      {renderLeftSlot()}
       <TextInput
         testID={testID}
         style={styles.input}

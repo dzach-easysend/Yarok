@@ -9,12 +9,11 @@ import MapGL, { Marker, type ViewStateChangeEvent, type MapRef } from "react-map
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { MapViewProps, MapCenter } from "./types";
 import { OSM_MAP_STYLE } from "./types";
+import { MapControls } from "./MapControls";
 
 function applyFlyTo(mapRef: React.RefObject<MapRef | null>, flyTo: { center: MapCenter; zoom: number } | null | undefined) {
   if (!flyTo || !mapRef.current) return;
   try {
-    // getMap() returns the underlying maplibre-gl Map instance.
-    // Fall back to the ref itself for environments where getMap is unavailable.
     const map = (mapRef.current.getMap?.() ?? mapRef.current) as { flyTo?: (opts: object) => void };
     map.flyTo?.({
       center: [flyTo.center.lng, flyTo.center.lat],
@@ -53,29 +52,19 @@ export default function MapView({
     };
   }, []);
 
-  const handleLoad = useCallback((evt: { target?: unknown }) => {
+  const handleLoad = useCallback((evt: any) => {
     applyFlyTo(mapRef, flyToRef.current);
 
-    // Prevent page scroll when wheeling over the map so MapLibre's scrollZoom works.
-    const mapInstance = mapRef.current?.getMap?.();
+    const mapInstance = evt.target;
     const container = mapInstance?.getContainer?.() as HTMLElement | undefined;
+
     if (container) {
       const handler = (e: WheelEvent) => {
         if (interactive) e.preventDefault();
       };
-      container.addEventListener("wheel", handler, { passive: false });
-      wheelCleanupRef.current = () => container.removeEventListener("wheel", handler);
-    }
 
-    if (__DEV__) {
-      const map = (evt?.target as { getZoom?: () => number; on?: (e: string, cb: () => void) => void }) ?? null;
-      if (map?.getZoom) {
-        map.on?.("zoomend", () => console.log("[MapView.web] zoom:", map.getZoom?.()));
-        (window as any).__yarokMap = map;
-        console.log("[MapView.web] map exposed, initial zoom:", map.getZoom?.());
-      } else {
-        console.log("[MapView.web] onLoad evt.target has no getZoom:", typeof map);
-      }
+      container.addEventListener("wheel", handler, { passive: false, capture: true });
+      wheelCleanupRef.current = () => container.removeEventListener("wheel", handler, { capture: true });
     }
   }, [interactive]);
 
@@ -90,8 +79,33 @@ export default function MapView({
     [onMoveEnd],
   );
 
+  const handleZoomIn = useCallback(() => {
+    mapRef.current?.zoomIn();
+  }, []);
+
+  const handleZoomOut = useCallback(() => {
+    mapRef.current?.zoomOut();
+  }, []);
+
+  const handleLocateMe = useCallback(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          mapRef.current?.flyTo({
+            center: [position.coords.longitude, position.coords.latitude],
+            zoom: 15,
+          });
+        },
+        (error) => {
+          console.warn("Error getting location:", error);
+        }
+      );
+    } else {
+      console.warn("Geolocation not supported");
+    }
+  }, []);
+
   return (
-    // Outer View keeps React Native style compatibility (flex, external style prop).
     <View style={[styles.container, style]}>
       <MapGL
           ref={mapRef}
@@ -132,6 +146,13 @@ export default function MapView({
             </Marker>
           ))}
         </MapGL>
+        {interactive && (
+          <MapControls
+            onZoomIn={handleZoomIn}
+            onZoomOut={handleZoomOut}
+            onLocateMe={handleLocateMe}
+          />
+        )}
     </View>
   );
 }

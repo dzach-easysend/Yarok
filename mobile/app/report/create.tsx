@@ -152,10 +152,6 @@ export default function CreateReportScreen() {
     });
   };
 
-  function handleAdjustLocation() {
-    setPickerVisible(true);
-  }
-
   function handlePickerConfirm(picked: MapCenter) {
     setLocation(picked);
     setPickerVisible(false);
@@ -170,7 +166,7 @@ export default function CreateReportScreen() {
       return (
         <View style={styles.locationError}>
           <Text style={styles.error}>{locationError}</Text>
-          <TouchableOpacity style={styles.adjustBtn} onPress={handleAdjustLocation}>
+          <TouchableOpacity style={styles.adjustBtn} onPress={() => setPickerVisible(true)}>
             <Text style={styles.adjustBtnText}>בחר מיקום ידנית</Text>
           </TouchableOpacity>
         </View>
@@ -181,10 +177,9 @@ export default function CreateReportScreen() {
         <TouchableOpacity
           testID="mini-map-touch"
           style={styles.miniMapTouchable}
-          onPress={handleAdjustLocation}
+          onPress={() => setPickerVisible(true)}
           activeOpacity={0.9}
         >
-          {/* Map fills the card */}
           <MapView
             key={`${location.lat},${location.lng}`}
             center={location}
@@ -193,12 +188,10 @@ export default function CreateReportScreen() {
             interactive={false}
             style={styles.miniMap}
           />
-          {/* Fixed centered pin overlay — no touches intercepted */}
           <View style={[styles.miniPinOverlay, { pointerEvents: "none" }]}>
             <View style={styles.miniPinCircle} />
             <View style={styles.miniPinTip} />
           </View>
-          {/* Edit hint badge */}
           <View style={[styles.adjustBadge, { pointerEvents: "none" }]}>
             <Text style={styles.adjustBadgeText}>✎ שנה מיקום</Text>
           </View>
@@ -251,8 +244,7 @@ export default function CreateReportScreen() {
               <View
                 style={[
                   styles.addMediaBox,
-                  { position: "relative" as const },
-                  { pointerEvents: "box-none" as const },
+                  { position: "relative", pointerEvents: "box-none" },
                 ]}
               >
                 <Text style={[styles.addMediaIcon, { pointerEvents: "none" }]}>
@@ -341,7 +333,6 @@ export default function CreateReportScreen() {
         )}
       </TouchableOpacity>
 
-      {/* Location picker — rendered as overlay to avoid modal-on-modal nav issues */}
       <LocationPickerOverlay
         visible={pickerVisible}
         initialCenter={location ?? { lat: 31.7683, lng: 35.2137 }}
@@ -358,7 +349,6 @@ const styles = StyleSheet.create({
   scrollContent: { padding: 16, paddingBottom: 100 },
   step: { marginBottom: 24 },
   stepLabel: { fontSize: 11, color: colors.muted, marginBottom: 6, textAlign: "right" },
-  stepValue: { fontSize: 15, color: colors.text, textAlign: "right" },
   error: { fontSize: 14, color: colors.error, textAlign: "right" },
   locationError: { gap: 8 },
   locationLoading: { flexDirection: "row", alignItems: "center", gap: 8 },
@@ -372,7 +362,6 @@ const styles = StyleSheet.create({
     borderColor: colors.primary,
   },
   adjustBtnText: { fontSize: 13, color: colors.primary, fontWeight: "500" },
-  // Mini-map location preview
   miniMapTouchable: {
     height: 160,
     borderRadius: 12,
@@ -390,7 +379,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: "center",
     alignItems: "center",
-    // Lift the group so the tip point sits at the map center
     transform: [{ translateY: -11 }],
   },
   miniPinCircle: {

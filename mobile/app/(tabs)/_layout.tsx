@@ -50,7 +50,7 @@ export default function TabLayout() {
         headerTintColor: colors.text,
         headerTitle: () => <HeaderTitleRtl title={TAB_TITLES[route.name] ?? route.name} />,
         headerTitleContainerStyle: {
-          position: "absolute" as const,
+          position: "absolute",
           left: 0,
           right: 0,
           top: 0,
