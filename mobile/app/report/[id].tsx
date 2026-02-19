@@ -13,7 +13,13 @@ import {
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { getReport, updateReport, deleteReport, type MediaItem } from "@/services/api";
+import {
+  getReport,
+  updateReport,
+  deleteReport,
+  type MediaItem,
+  type ReportListItem,
+} from "@/services/api";
 import ScreenHeader from "@/components/ScreenHeader";
 import { MapView } from "@/components/map";
 import { statusLabel, STATUS_OPTIONS } from "@/utils/statusLabel";
@@ -53,6 +59,17 @@ export default function ReportDetailScreen() {
   const deleteMutation = useMutation({
     mutationFn: () => deleteReport(id!),
     onSuccess: () => {
+      // Remove deleted report from list caches so reports screen never mounts with stale item (fixes blank screen after delete on web)
+      queryClient.setQueriesData(
+        { queryKey: ["my-reports"] },
+        (old: ReportListItem[] | undefined) =>
+          old ? old.filter((r) => r.id !== id) : old,
+      );
+      queryClient.setQueriesData(
+        { queryKey: ["reports"] },
+        (old: ReportListItem[] | undefined) =>
+          old ? old.filter((r) => r.id !== id) : old,
+      );
       queryClient.invalidateQueries({ queryKey: ["reports"] });
       queryClient.invalidateQueries({ queryKey: ["my-reports"] });
       router.replace("/(tabs)/reports");
