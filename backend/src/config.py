@@ -50,5 +50,8 @@ class Settings(BaseSettings):
     rate_limit_reports_per_hour: int = 10
     rate_limit_reads_per_minute: int = 100
 
+    # Debug: accept client logs and write to stdout (for Railway / production debugging)
+    debug_client_logs: bool = False
+
 
 settings = Settings()

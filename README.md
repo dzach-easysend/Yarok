@@ -173,6 +173,16 @@ The project deploys to Railway as three services within one project.
 - **Port**: Railway injects `$PORT` at runtime. The backend `start.sh` reads it automatically (defaults to 8000). Set the public domain target port to match (check deploy logs for the actual port).
 - **Redis**: Not currently used in the codebase. No need to configure unless you add background jobs or server-side rate limiting later.
 
+### Railway debugging (client logs)
+
+To see client-side events (e.g. delete flow, reports screen mount) in **yarok-api** Deploy Logs:
+
+1. **Backend (yarok-api):** Set `DEBUG_CLIENT_LOGS=true` in the service variables. Redeploy.
+2. **Mobile (yarok-web):** Set `EXPO_PUBLIC_DEBUG_LOGS=1` as a build argument (or in the build env) and redeploy the web app so the client sends log payloads to the API.
+3. Reproduce the issue (e.g. delete a report twice). In Railway → yarok-api → Deploy Logs, filter or search for `[CLIENT]` to see the event sequence (e.g. `delete onSuccess`, `before router.replace`, `MyReportsScreen mounted`, `renderContent` with `reportsLength`/`branch`).
+
+This helps identify client-only bugs (e.g. blank screen after second delete) without remote debugging. Turn off `DEBUG_CLIENT_LOGS` when not debugging.
+
 ## License
 
 Proprietary.

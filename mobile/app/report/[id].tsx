@@ -23,6 +23,7 @@ import {
 import ScreenHeader from "@/components/ScreenHeader";
 import { MapView } from "@/components/map";
 import { statusLabel, STATUS_OPTIONS } from "@/utils/statusLabel";
+import { railwayLog } from "@/utils/railwayLog";
 import { colors } from "@/constants/theme";
 
 const API_BASE = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -59,6 +60,7 @@ export default function ReportDetailScreen() {
   const deleteMutation = useMutation({
     mutationFn: () => deleteReport(id!),
     onSuccess: () => {
+      railwayLog("delete onSuccess", { platform: Platform.OS, reportId: id });
       // Remove deleted report from list caches so reports screen never mounts with stale item (fixes blank screen after delete on web)
       queryClient.setQueriesData(
         { queryKey: ["my-reports"] },
@@ -72,7 +74,12 @@ export default function ReportDetailScreen() {
       );
       queryClient.invalidateQueries({ queryKey: ["reports"] });
       queryClient.invalidateQueries({ queryKey: ["my-reports"] });
+      railwayLog("before router.replace", { target: "/(tabs)/reports" });
       router.replace("/(tabs)/reports");
+      railwayLog("after router.replace", {});
+    },
+    onError: (err) => {
+      railwayLog("delete failed", { err: String(err), reportId: id }, "error");
     },
   });
 

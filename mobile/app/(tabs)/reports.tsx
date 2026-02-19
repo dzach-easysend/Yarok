@@ -13,6 +13,7 @@ import { useQuery } from "@tanstack/react-query";
 import * as Location from "expo-location";
 import { getReports, type ReportListItem } from "@/services/api";
 import { statusLabel } from "@/utils/statusLabel";
+import { railwayLog } from "@/utils/railwayLog";
 import { colors, spacing, radii } from "@/constants/theme";
 import DragScrollView from "@/components/DragScrollView";
 import { MapView } from "@/components/map";
@@ -121,7 +122,7 @@ export default function MyReportsScreen() {
     })();
   }, []);
 
-  const { data: reports = [], isLoading } = useQuery({
+  const { data: reports = [], isLoading, isError } = useQuery({
     queryKey: ["my-reports", userLocation.lat, userLocation.lng],
     queryFn: () =>
       getReports({ lat: userLocation.lat, lng: userLocation.lng, radius_km: 500 }),
@@ -129,7 +130,19 @@ export default function MyReportsScreen() {
 
   const isEmpty = !isLoading && reports.length === 0;
 
+  useEffect(() => {
+    railwayLog("MyReportsScreen mounted", { platform: Platform.OS });
+  }, []);
+
   function renderContent(): React.ReactNode {
+    const branch = isLoading ? "loading" : isEmpty ? "empty" : "list";
+    railwayLog("renderContent", {
+      isLoading,
+      isEmpty,
+      reportsLength: reports.length,
+      isError,
+      branch,
+    });
     if (isLoading) {
       return (
         <View style={styles.loadingWrap}>
