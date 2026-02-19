@@ -37,34 +37,36 @@ export default function MapView({
   style,
 }: MapViewProps) {
   const mapRef = useRef<MapRef>(null);
-  // A real HTMLDivElement ref — guaranteed to have addEventListener, unlike a
-  // React Native View ref which may not expose the DOM element in all RN Web versions.
-  const containerRef = useRef<HTMLDivElement>(null);
   const flyToRef = useRef(flyTo);
+  const wheelCleanupRef = useRef<(() => void) | null>(null);
+
   flyToRef.current = flyTo;
 
   useEffect(() => {
     applyFlyTo(mapRef, flyTo);
   }, [flyTo]);
 
-  // Block the browser's native page scroll when the user wheels over the map.
-  // { passive: false } is mandatory — React 17+ attaches synthetic onWheel as
-  // passive by default, making preventDefault() a no-op there.
-  // MapLibre's own scrollZoom handler fires on the canvas (a child element) before
-  // this bubble-phase listener runs, so the map zooms correctly first.
   useEffect(() => {
-    const el = containerRef.current;
-    if (__DEV__) console.log("[MapView.web] containerRef el:", el?.tagName ?? "NULL");
-    if (!el) return;
-    const onWheel = (e: WheelEvent) => {
-      if (interactive) e.preventDefault();
+    return () => {
+      wheelCleanupRef.current?.();
+      wheelCleanupRef.current = null;
     };
-    el.addEventListener("wheel", onWheel, { passive: false });
-    return () => el.removeEventListener("wheel", onWheel);
-  }, [interactive]);
+  }, []);
 
   const handleLoad = useCallback((evt: { target?: unknown }) => {
     applyFlyTo(mapRef, flyToRef.current);
+
+    // Prevent page scroll when wheeling over the map so MapLibre's scrollZoom works.
+    const mapInstance = mapRef.current?.getMap?.();
+    const container = mapInstance?.getContainer?.() as HTMLElement | undefined;
+    if (container) {
+      const handler = (e: WheelEvent) => {
+        if (interactive) e.preventDefault();
+      };
+      container.addEventListener("wheel", handler, { passive: false });
+      wheelCleanupRef.current = () => container.removeEventListener("wheel", handler);
+    }
+
     if (__DEV__) {
       const map = (evt?.target as { getZoom?: () => number; on?: (e: string, cb: () => void) => void }) ?? null;
       if (map?.getZoom) {
@@ -75,7 +77,7 @@ export default function MapView({
         console.log("[MapView.web] onLoad evt.target has no getZoom:", typeof map);
       }
     }
-  }, []);
+  }, [interactive]);
 
   const handleMoveEnd = useCallback(
     (evt: ViewStateChangeEvent) => {
@@ -90,11 +92,8 @@ export default function MapView({
 
   return (
     // Outer View keeps React Native style compatibility (flex, external style prop).
-    // RN Web renders View as `position: relative` by default, so the inner div's
-    // `position: absolute; inset: 0` correctly fills the full container area.
     <View style={[styles.container, style]}>
-      <div ref={containerRef} style={styles.innerContainer}>
-        <MapGL
+      <MapGL
           ref={mapRef}
           initialViewState={{
             latitude: center.lat,
@@ -133,20 +132,10 @@ export default function MapView({
             </Marker>
           ))}
         </MapGL>
-      </div>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  // Cast to `any` because StyleSheet doesn't have a type for the CSS `inset`
-  // shorthand, but React Native Web forwards it to the DOM unchanged.
-  innerContainer: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  } as any,
 });

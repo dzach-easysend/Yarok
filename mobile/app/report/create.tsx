@@ -95,6 +95,7 @@ export default function CreateReportScreen() {
         file,
       }));
       setMediaItems((prev) => [...prev, ...newItems]);
+      e.target.value = "";
     },
     [],
   );
@@ -246,14 +247,50 @@ export default function CreateReportScreen() {
                 </TouchableOpacity>
               </View>
             ))}
-            <TouchableOpacity
-              testID="take-photo"
-              style={styles.addMediaBox}
-              onPress={takePhoto}
-            >
-              <Text style={styles.addMediaIcon}>📷</Text>
-              <Text style={styles.addMediaText}>צלם</Text>
-            </TouchableOpacity>
+            {Platform.OS === "web" ? (
+              <View
+                style={[
+                  styles.addMediaBox,
+                  { position: "relative" as const },
+                  { pointerEvents: "box-none" as const },
+                ]}
+              >
+                <Text style={[styles.addMediaIcon, { pointerEvents: "none" }]}>
+                  📷
+                </Text>
+                <Text style={[styles.addMediaText, { pointerEvents: "none" }]}>
+                  צלם
+                </Text>
+                <input
+                  ref={cameraInputRef as React.RefObject<HTMLInputElement>}
+                  data-testid="take-photo"
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handleCameraInput}
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    width: "100%",
+                    height: "100%",
+                    opacity: 0,
+                    zIndex: 1,
+                    cursor: "pointer",
+                    pointerEvents: "auto",
+                  }}
+                />
+              </View>
+            ) : (
+              <TouchableOpacity
+                testID="take-photo"
+                style={styles.addMediaBox}
+                onPress={takePhoto}
+              >
+                <Text style={styles.addMediaIcon}>📷</Text>
+                <Text style={styles.addMediaText}>צלם</Text>
+              </TouchableOpacity>
+            )}
             <TouchableOpacity
               testID="add-media"
               style={styles.addMediaBox}
@@ -263,16 +300,6 @@ export default function CreateReportScreen() {
               <Text style={styles.addMediaText}>בחר מגלריה</Text>
             </TouchableOpacity>
           </ScrollView>
-          {Platform.OS === "web" && (
-            <input
-              ref={cameraInputRef as React.RefObject<HTMLInputElement>}
-              type="file"
-              accept="image/*,video/*"
-              capture="environment"
-              onChange={handleCameraInput}
-              style={{ display: "none" }}
-            />
-          )}
         </View>
         <View style={styles.step}>
           <Text style={styles.stepLabel}>תיאור (אופציונלי)</Text>
