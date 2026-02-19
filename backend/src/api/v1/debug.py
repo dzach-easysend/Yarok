@@ -1,6 +1,7 @@
 """Debug endpoints for production troubleshooting (e.g. client log ingestion for Railway)."""
 
 import logging
+import sys
 from typing import Any, Optional
 
 from fastapi import APIRouter, Request, status
@@ -56,3 +57,5 @@ async def client_log(payload: ClientLogPayload, request: Request) -> None:
         logger.warning(log_msg, extra=extra)
     else:
         logger.info(log_msg, extra=extra)
+    # Guarantee line appears in Railway Deploy Logs (stdout is always captured)
+    print(log_msg, flush=True, file=sys.stdout)

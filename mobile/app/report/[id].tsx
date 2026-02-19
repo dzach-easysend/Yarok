@@ -50,7 +50,23 @@ export default function ReportDetailScreen() {
 
   const updateMutation = useMutation({
     mutationFn: (status: string) => updateReport(id!, { status }),
-    onSuccess: () => {
+    onSuccess: (_data, newStatus) => {
+      railwayLog("update status onSuccess", { platform: Platform.OS, reportId: id, newStatus });
+      // Update report in list caches so navigating back never shows stale status (avoids blank screen on web)
+      queryClient.setQueriesData(
+        { queryKey: ["my-reports"] },
+        (old: ReportListItem[] | undefined) =>
+          old
+            ? old.map((r) => (r.id === id ? { ...r, status: newStatus } : r))
+            : old,
+      );
+      queryClient.setQueriesData(
+        { queryKey: ["reports"] },
+        (old: ReportListItem[] | undefined) =>
+          old
+            ? old.map((r) => (r.id === id ? { ...r, status: newStatus } : r))
+            : old,
+      );
       queryClient.invalidateQueries({ queryKey: ["report", id] });
       queryClient.invalidateQueries({ queryKey: ["reports"] });
       queryClient.invalidateQueries({ queryKey: ["my-reports"] });

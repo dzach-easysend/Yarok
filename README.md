@@ -175,13 +175,14 @@ The project deploys to Railway as three services within one project.
 
 ### Railway debugging (client logs)
 
-To see client-side events (e.g. delete flow, reports screen mount) in **yarok-api** Deploy Logs:
+To see client-side events (e.g. delete flow, reports screen mount) in Railway:
 
-1. **Backend (yarok-api):** Set `DEBUG_CLIENT_LOGS=true` in the service variables. Redeploy.
-2. **Mobile (yarok-web):** Set `EXPO_PUBLIC_DEBUG_LOGS=1` as a build argument (or in the build env) and redeploy the web app so the client sends log payloads to the API.
-3. Reproduce the issue (e.g. delete a report twice). In Railway → yarok-api → Deploy Logs, filter or search for `[CLIENT]` to see the event sequence (e.g. `delete onSuccess`, `before router.replace`, `MyReportsScreen mounted`, `renderContent` with `reportsLength`/`branch`).
+1. **Backend (yarok-api):** In the service → **Variables**, set `DEBUG_CLIENT_LOGS=true`. Redeploy so the API accepts and prints client logs.
+2. **Web app (yarok-web):** In the service → **Variables**, set `EXPO_PUBLIC_DEBUG_LOGS=1`. **Redeploy yarok-web** so the new value is baked into the built JS bundle (static export uses build-time env).
+3. Reproduce the issue in the browser (e.g. change status, delete a report, go back). The app will POST to `https://<yarok-api>/api/v1/debug/client-log`; the API prints each line to stdout.
+4. **Where to see the logs:** Open **yarok-api** → **Deploy Logs** (tab next to Build Logs / HTTP Logs). Clear any search filter, then scroll or search for `CLIENT` to see lines like `[CLIENT] INFO update status onSuccess | {...}`. If you see "No logs found for this filter", clear the filter first; if you still see no `[CLIENT]` lines after reproducing, the web app likely wasn’t rebuilt with `EXPO_PUBLIC_DEBUG_LOGS=1` (redeploy yarok-web) or the API wasn’t redeployed with `DEBUG_CLIENT_LOGS=true`.
 
-This helps identify client-only bugs (e.g. blank screen after second delete) without remote debugging. Turn off `DEBUG_CLIENT_LOGS` when not debugging.
+This helps identify client-only bugs (e.g. blank screen after navigation) without remote debugging. Turn off `DEBUG_CLIENT_LOGS` when not debugging.
 
 ## License
 
