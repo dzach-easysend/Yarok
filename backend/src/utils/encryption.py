@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import os
+from typing import Optional
 
 from cryptography.fernet import Fernet
 
 
-def get_fernet(key_b64: str | None = None) -> Fernet | None:
+def get_fernet(key_b64: Optional[str] = None) -> Optional[Fernet]:
     """Return a Fernet instance from env key or None if not configured."""
     raw = (key_b64 or os.environ.get("ENCRYPTION_KEY", "")).strip()
     if not raw:
@@ -18,7 +19,7 @@ def get_fernet(key_b64: str | None = None) -> Fernet | None:
         return None
 
 
-def encrypt_value(fernet: Fernet | None, value: str | None) -> str | None:
+def encrypt_value(fernet: Optional[Fernet], value: Optional[str]) -> Optional[str]:
     """Encrypt a string; return None if value is None or fernet missing."""
     if value is None or not value.strip():
         return None
@@ -30,7 +31,7 @@ def encrypt_value(fernet: Fernet | None, value: str | None) -> str | None:
         return value
 
 
-def decrypt_value(fernet: Fernet | None, value: str | None) -> str | None:
+def decrypt_value(fernet: Optional[Fernet], value: Optional[str]) -> Optional[str]:
     """Decrypt a string; return original if fernet missing or invalid."""
     if value is None or not value.strip():
         return None

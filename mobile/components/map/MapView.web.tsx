@@ -10,7 +10,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import type { MapViewProps, MapCenter } from "./types";
 import { OSM_MAP_STYLE } from "./types";
 
-function applyFlyTo(mapRef: React.RefObject<MapRef | null>, flyTo: { center: MapCenter; zoom: number } | null) {
+function applyFlyTo(mapRef: React.RefObject<MapRef | null>, flyTo: { center: MapCenter; zoom: number } | null | undefined) {
   if (!flyTo || !mapRef.current) return;
   try {
     // getMap() returns the underlying maplibre-gl Map instance.

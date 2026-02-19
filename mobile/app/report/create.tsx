@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   Alert,
   ActivityIndicator,
   Image,
+  Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
 import * as Location from "expo-location";
@@ -31,6 +32,7 @@ export default function CreateReportScreen() {
   const [description, setDescription] = useState("");
   const [contactInfo, setContactInfo] = useState("");
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
+  const cameraInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -68,7 +70,7 @@ export default function CreateReportScreen() {
     },
   });
 
-  const pickImage = async () => {
+  const pickFromGallery = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images", "videos"],
       allowsMultipleSelection: true,
@@ -81,6 +83,49 @@ export default function CreateReportScreen() {
         file: "file" in a && a.file instanceof File ? a.file : undefined,
       }));
       setMediaItems((prev) => [...prev, ...newItems]);
+    }
+  };
+
+  const handleCameraInput = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = e.target.files;
+      if (!files || files.length === 0) return;
+      const newItems: MediaItem[] = Array.from(files).map((file) => ({
+        uri: URL.createObjectURL(file),
+        file,
+      }));
+      setMediaItems((prev) => [...prev, ...newItems]);
+    },
+    [],
+  );
+
+  const takePhoto = async () => {
+    if (Platform.OS === "web") {
+      if (cameraInputRef.current) {
+        cameraInputRef.current.value = "";
+        cameraInputRef.current.click();
+      }
+      return;
+    }
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("אין הרשאת מצלמה", "יש לאשר גישה למצלמה כדי לצלם.");
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ["images", "videos"],
+      quality: 0.8,
+      videoMaxDuration: 10,
+    });
+    if (!result.canceled && result.assets.length) {
+      const asset = result.assets[0];
+      setMediaItems((prev) => [
+        ...prev,
+        {
+          uri: asset.uri,
+          file: "file" in asset && asset.file instanceof File ? asset.file : undefined,
+        },
+      ]);
     }
   };
 
@@ -202,14 +247,32 @@ export default function CreateReportScreen() {
               </View>
             ))}
             <TouchableOpacity
-              testID="add-media"
+              testID="take-photo"
               style={styles.addMediaBox}
-              onPress={pickImage}
+              onPress={takePhoto}
             >
               <Text style={styles.addMediaIcon}>📷</Text>
-              <Text style={styles.addMediaText}>הוסף תמונה/וידאו</Text>
+              <Text style={styles.addMediaText}>צלם</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              testID="add-media"
+              style={styles.addMediaBox}
+              onPress={pickFromGallery}
+            >
+              <Text style={styles.addMediaIcon}>🖼️</Text>
+              <Text style={styles.addMediaText}>בחר מגלריה</Text>
             </TouchableOpacity>
           </ScrollView>
+          {Platform.OS === "web" && (
+            <input
+              ref={cameraInputRef as React.RefObject<HTMLInputElement>}
+              type="file"
+              accept="image/*,video/*"
+              capture="environment"
+              onChange={handleCameraInput}
+              style={{ display: "none" }}
+            />
+          )}
         </View>
         <View style={styles.step}>
           <Text style={styles.stepLabel}>תיאור (אופציונלי)</Text>
@@ -380,7 +443,7 @@ const styles = StyleSheet.create({
   },
   mediaThumbRemoveText: { fontSize: 18, color: colors.white, lineHeight: 22 },
   addMediaBox: {
-    width: 120,
+    width: 100,
     height: 120,
     borderWidth: 2,
     borderStyle: "dashed",
@@ -391,7 +454,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   addMediaIcon: { fontSize: 28, opacity: 0.8 },
-  addMediaText: { fontSize: 12, color: colors.primary, textAlign: "right" },
+  addMediaText: { fontSize: 12, color: colors.primary, textAlign: "center" },
   input: {
     minHeight: 80,
     padding: 12,

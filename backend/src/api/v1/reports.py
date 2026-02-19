@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from geoalchemy2 import WKTElement
 from sqlalchemy import func, select
@@ -24,9 +26,9 @@ def _report_to_response(
     r: Report,
     *,
     media_count: int = 0,
-    media_items: list[MediaItem] | None = None,
-    lat: float | None = None,
-    lng: float | None = None,
+    media_items: Optional[list[MediaItem]] = None,
+    lat: Optional[float] = None,
+    lng: Optional[float] = None,
 ) -> ReportResponse:
     """Build API response from a report row.
 
@@ -59,8 +61,8 @@ def _report_to_response(
 async def create_report(
     body: ReportCreate,
     db: AsyncSession = Depends(get_db),
-    user_id: str | None = None,
-    device_id: str | None = None,
+    user_id: Optional[str] = None,
+    device_id: Optional[str] = None,
 ) -> ReportResponse:
     """Create a new report (user_id or device_id from JWT in real impl)."""
     point = WKTElement(f"POINT({body.lng} {body.lat})", srid=4326)
@@ -87,7 +89,7 @@ async def list_reports(
     radius_km: float = Query(10, ge=0.1, le=500),
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
-    status_filter: str | None = Query(None, alias="status"),
+    status_filter: Optional[str] = Query(None, alias="status"),
 ) -> list[ReportResponse]:
     """List reports within radius of (lat, lng) using PostGIS ST_DWithin."""
     # Approximate: 1 degree ~ 111 km; ST_DWithin in degree units
