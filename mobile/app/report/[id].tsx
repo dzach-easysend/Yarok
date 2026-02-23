@@ -90,10 +90,12 @@ export default function ReportDetailScreen() {
 
   const updateMutation = useMutation({
     mutationFn: (status: string) => updateReport(id!, { status }),
-    onSuccess: (_data, newStatus) => {
+    onSuccess: (data, newStatus) => {
       emitEvent("status_updated");
       railwayLog("update status onSuccess", { platform: Platform.OS, reportId: id, newStatus });
-      // Update report in list caches so navigating back never shows stale status (avoids blank screen on web)
+      // Update current report in cache so detail screen never refetches (refetch after status update caused blank on web)
+      queryClient.setQueryData(["report", id], data);
+      // Update report in list caches so navigating back never shows stale status
       queryClient.setQueriesData(
         { queryKey: ["my-reports"] },
         (old: ReportListItem[] | undefined) =>
@@ -108,7 +110,7 @@ export default function ReportDetailScreen() {
             ? old.map((r) => (r.id === id ? { ...r, status: newStatus } : r))
             : old,
       );
-      queryClient.invalidateQueries({ queryKey: ["report", id] });
+      // Invalidate list queries only so lists refetch when user navigates back; do NOT invalidate ["report", id]
       queryClient.invalidateQueries({ queryKey: ["reports"] });
       queryClient.invalidateQueries({ queryKey: ["my-reports"] });
     },
