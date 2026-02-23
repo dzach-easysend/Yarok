@@ -13,7 +13,7 @@ import { geocodeSearch, GeocodingError } from "@/services/geocoding";
 import { MapView, type MapCenter, type MapMarker } from "@/components/map";
 import MapSearchBar from "@/components/MapSearchBar";
 import { colors } from "@/constants/theme";
-import { railwayLog } from "@/utils/railwayLog";
+import { railwayLog, emitEvent } from "@/utils/railwayLog";
 
 const DEFAULT_CENTER: MapCenter = { lat: 31.7683, lng: 35.2137 };
 const DEFAULT_ZOOM = 13;
@@ -39,6 +39,7 @@ export default function MapScreen() {
   searchPinRef.current = searchPin;
 
   useEffect(() => {
+    emitEvent("map_screen_mounted");
     railwayLog("MapScreen mounted", { platform: Platform.OS });
   }, []);
 

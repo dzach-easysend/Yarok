@@ -7,7 +7,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/contexts/AuthContext";
 import BackendBanner from "@/components/BackendBanner";
 import { health } from "@/services/api";
-import { railwayLog } from "@/utils/railwayLog";
+import { railwayLog, emitEvent } from "@/utils/railwayLog";
 
 const queryClient = new QueryClient();
 
@@ -16,6 +16,7 @@ export default function RootLayout() {
   const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
+    emitEvent("app_mounted");
     railwayLog("RootLayout mounted", { platform: Platform.OS });
   }, []);
 

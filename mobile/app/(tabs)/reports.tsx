@@ -13,7 +13,7 @@ import { useQuery } from "@tanstack/react-query";
 import * as Location from "expo-location";
 import { getReports, type ReportListItem } from "@/services/api";
 import { statusLabel } from "@/utils/statusLabel";
-import { railwayLog } from "@/utils/railwayLog";
+import { railwayLog, emitEvent } from "@/utils/railwayLog";
 import { colors, spacing, radii } from "@/constants/theme";
 import DragScrollView from "@/components/DragScrollView";
 import { MapView } from "@/components/map";
@@ -131,6 +131,7 @@ export default function MyReportsScreen() {
   const isEmpty = !isLoading && reports.length === 0;
 
   useEffect(() => {
+    emitEvent("reports_screen_mounted");
     railwayLog("MyReportsScreen mounted", { platform: Platform.OS });
   }, []);
 
@@ -165,6 +166,7 @@ export default function MyReportsScreen() {
               key={item.id}
               item={item}
               onPress={() => {
+                emitEvent("navigating_to_report");
                 railwayLog("navigating to report", { reportId: item.id });
                 router.push(`/report/${item.id}`);
               }}
@@ -183,6 +185,7 @@ export default function MyReportsScreen() {
           <ReportCard
             item={item}
             onPress={() => {
+              emitEvent("navigating_to_report");
               railwayLog("navigating to report", { reportId: item.id });
               router.push(`/report/${item.id}`);
             }}

@@ -17,7 +17,7 @@ import * as ImagePicker from "expo-image-picker";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createReport, uploadMedia } from "@/services/api";
 import ScreenHeader from "@/components/ScreenHeader";
-import { railwayLog } from "@/utils/railwayLog";
+import { railwayLog, emitEvent } from "@/utils/railwayLog";
 import { MapView, type MapCenter } from "@/components/map";
 import LocationPickerOverlay from "@/components/LocationPickerOverlay";
 import { colors, radii } from "@/constants/theme";
@@ -66,6 +66,7 @@ export default function CreateReportScreen() {
       return report;
     },
     onSuccess: () => {
+      emitEvent("create_success");
       railwayLog("CreateReportScreen create success", { platform: Platform.OS });
       queryClient.invalidateQueries({ queryKey: ["reports"] });
       queryClient.invalidateQueries({ queryKey: ["my-reports"] });

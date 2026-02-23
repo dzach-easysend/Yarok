@@ -13,6 +13,24 @@ router = APIRouter(prefix="/debug", tags=["debug"])
 logger = logging.getLogger(__name__)
 
 
+@router.get(
+    "/event",
+    status_code=status.HTTP_200_OK,
+    summary="Client event beacon (always logged)",
+)
+async def debug_event(e: str = "") -> dict[str, str]:
+    """Log a client event so it appears in Railway API logs (HTTP line + [EVENT] line).
+
+    No env flag required. Client calls GET /api/v1/debug/event?e=create_success (etc.)
+    to leave a visible trail of user actions (create, status update, screen mount, etc.).
+    """
+    event_name = (e or "unknown").strip() or "empty"
+    log_line = f"[EVENT] {event_name}"
+    print(log_line, flush=True, file=sys.stdout)
+    logger.info(log_line)
+    return {"event": event_name}
+
+
 class ClientLogPayload(BaseModel):
     """Payload from the mobile/web client for server-side log visibility."""
 

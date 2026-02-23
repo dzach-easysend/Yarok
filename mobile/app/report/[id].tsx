@@ -23,7 +23,7 @@ import {
 import ScreenHeader from "@/components/ScreenHeader";
 import { MapView } from "@/components/map";
 import { statusLabel, STATUS_OPTIONS } from "@/utils/statusLabel";
-import { railwayLog } from "@/utils/railwayLog";
+import { railwayLog, emitEvent } from "@/utils/railwayLog";
 import { colors } from "@/constants/theme";
 
 const API_BASE = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -72,6 +72,7 @@ export default function ReportDetailScreen() {
 
   useEffect(() => {
     railwayLog("ReportDetailScreen mounted", { platform: Platform.OS, reportId: id });
+    emitEvent("report_detail_mounted");
   }, [id]);
 
   useEffect(() => {
@@ -90,6 +91,7 @@ export default function ReportDetailScreen() {
   const updateMutation = useMutation({
     mutationFn: (status: string) => updateReport(id!, { status }),
     onSuccess: (_data, newStatus) => {
+      emitEvent("status_updated");
       railwayLog("update status onSuccess", { platform: Platform.OS, reportId: id, newStatus });
       // Update report in list caches so navigating back never shows stale status (avoids blank screen on web)
       queryClient.setQueriesData(
@@ -115,6 +117,7 @@ export default function ReportDetailScreen() {
   const deleteMutation = useMutation({
     mutationFn: () => deleteReport(id!),
     onSuccess: () => {
+      emitEvent("delete_success");
       railwayLog("delete onSuccess", { platform: Platform.OS, reportId: id });
       // Remove deleted report from list caches so reports screen never mounts with stale item (fixes blank screen after delete on web)
       queryClient.setQueriesData(
@@ -130,9 +133,15 @@ export default function ReportDetailScreen() {
       queryClient.invalidateQueries({ queryKey: ["reports"] });
       queryClient.invalidateQueries({ queryKey: ["my-reports"] });
       railwayLog("before router.replace", { target: "/(tabs)/reports" });
-      // On web, router.replace can leave the app in a blank state (Expo Router stack). Use full-page navigation so the reports list always loads.
+      // On web, router.replace can leave the app in a blank state (Expo Router stack). Use full-page
+      // navigation so the reports list always loads. Use hash (#reports) so the server only needs to
+      // serve index at /; path-based /reports can 404 or fail to hydrate and cause a blank screen.
       if (Platform.OS === "web" && typeof window !== "undefined") {
-        window.location.replace(`${window.location.origin}/reports`);
+        const origin = window.location.origin;
+        const base =
+          window.location.pathname.split("/report")[0].replace(/\/$/, "") || "";
+        const root = base ? `${origin}${base}` : origin;
+        window.location.replace(`${root}/#reports`);
         return;
       }
       router.replace("/(tabs)/reports");
