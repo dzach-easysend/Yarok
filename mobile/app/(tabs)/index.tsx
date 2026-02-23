@@ -69,13 +69,17 @@ export default function MapScreen() {
     ...(searchPin ? [searchPin] : []),
   ];
 
+  function showToast(text: string) {
+    setToast({ visible: true, text });
+    setTimeout(() => setToast((t) => ({ ...t, visible: false })), TOAST_DURATION_MS);
+  }
+
   const handleSearch = useCallback(async () => {
     if (!searchQuery.trim()) return;
     try {
       const result = await geocodeSearch(searchQuery);
       if (!result) {
-        setToast({ visible: true, text: "לא נמצא מיקום" });
-        setTimeout(() => setToast((t) => ({ ...t, visible: false })), TOAST_DURATION_MS);
+        showToast("לא נמצא מיקום");
         return;
       }
       setSearchPin({
@@ -85,8 +89,7 @@ export default function MapScreen() {
         color: "#f57c00",
       });
       setFlyTo({ center: result, zoom: 15 });
-      setToast({ visible: true, text: "המפה הוזזה למיקום המבוקש" });
-      setTimeout(() => setToast((t) => ({ ...t, visible: false })), TOAST_DURATION_MS);
+      showToast("המפה הוזזה למיקום המבוקש");
     } catch (err) {
       if (__DEV__ && err instanceof Error) {
         console.warn("[Map search]", err.message, err);
@@ -95,8 +98,7 @@ export default function MapScreen() {
         err instanceof GeocodingError && err.status === 429
           ? "יותר מדי חיפושים. נסה שוב בעוד רגע."
           : "שגיאה בחיפוש. נסה שוב.";
-      setToast({ visible: true, text: message });
-      setTimeout(() => setToast((t) => ({ ...t, visible: false })), TOAST_DURATION_MS);
+      showToast(message);
     }
   }, [searchQuery]);
 

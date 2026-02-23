@@ -1,6 +1,5 @@
 """API tests for /api/v1/auth endpoints with mocked database."""
 
-
 import pytest
 
 from src.services.auth import create_access_token, create_refresh_token, hash_password

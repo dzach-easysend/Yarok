@@ -138,51 +138,51 @@ export default function MapView({
     <MapErrorBoundary style={style}>
       <View style={[styles.container, style]}>
         <MapGL
-            ref={mapRef}
-            initialViewState={{
-              latitude: center.lat,
-              longitude: center.lng,
-              zoom,
-            }}
-            style={{ width: "100%", height: "100%" }}
-            mapStyle={OSM_MAP_STYLE}
-            onLoad={handleLoad}
-            onMoveEnd={handleMoveEnd}
-            scrollZoom={interactive}
-            dragPan={interactive}
-            dragRotate={false}
-            pitchWithRotate={false}
-            touchZoomRotate={interactive}
-            doubleClickZoom={interactive}
-            attributionControl={false}
-          >
-            {markers.map((m) => (
-              <Marker
-                key={m.id}
-                latitude={m.lat}
-                longitude={m.lng}
-                onClick={() => onMarkerPress?.(m.id)}
-              >
-                <div
-                  style={{
-                    width: 16,
-                    height: 16,
-                    borderRadius: 8,
-                    backgroundColor: m.color || "#1a73e8",
-                    border: "2px solid #fff",
-                    cursor: "pointer",
-                  }}
-                />
-              </Marker>
-            ))}
-          </MapGL>
-          {interactive && (
-            <MapControls
-              onZoomIn={handleZoomIn}
-              onZoomOut={handleZoomOut}
-              onLocateMe={handleLocateMe}
-            />
-          )}
+          ref={mapRef}
+          initialViewState={{
+            latitude: center.lat,
+            longitude: center.lng,
+            zoom,
+          }}
+          style={{ width: "100%", height: "100%" }}
+          mapStyle={OSM_MAP_STYLE}
+          onLoad={handleLoad}
+          onMoveEnd={handleMoveEnd}
+          scrollZoom={interactive}
+          dragPan={interactive}
+          dragRotate={false}
+          pitchWithRotate={false}
+          touchZoomRotate={interactive}
+          doubleClickZoom={interactive}
+          attributionControl={false}
+        >
+          {markers.map((m) => (
+            <Marker
+              key={m.id}
+              latitude={m.lat}
+              longitude={m.lng}
+              onClick={() => onMarkerPress?.(m.id)}
+            >
+              <div
+                style={{
+                  width: 16,
+                  height: 16,
+                  borderRadius: 8,
+                  backgroundColor: m.color || "#1a73e8",
+                  border: "2px solid #fff",
+                  cursor: "pointer",
+                }}
+              />
+            </Marker>
+          ))}
+        </MapGL>
+        {interactive && (
+          <MapControls
+            onZoomIn={handleZoomIn}
+            onZoomOut={handleZoomOut}
+            onLocateMe={handleLocateMe}
+          />
+        )}
       </View>
     </MapErrorBoundary>
   );

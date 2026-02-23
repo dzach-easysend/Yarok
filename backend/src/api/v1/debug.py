@@ -65,9 +65,8 @@ async def client_log(payload: ClientLogPayload, request: Request) -> None:
         "ts": payload.timestamp,
         "path": request.url.path,
     }
-    log_msg = (
-        f"[CLIENT] {payload.level.upper()} {payload.message}"
-        + (f" | {payload.data}" if payload.data else "")
+    log_msg = f"[CLIENT] {payload.level.upper()} {payload.message}" + (
+        f" | {payload.data}" if payload.data else ""
     )
     if payload.level == "error":
         logger.error(log_msg, extra=extra)

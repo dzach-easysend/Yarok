@@ -1,5 +1,4 @@
-import { View, StyleSheet, TouchableOpacity, Platform } from "react-native";
-import type { ViewStyle } from "react-native";
+import { View, StyleSheet, TouchableOpacity, Platform, type ViewStyle } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { colors } from "@/constants/theme";
 

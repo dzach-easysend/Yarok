@@ -60,7 +60,7 @@ function EmptyState({ onCreatePress }: { onCreatePress: () => void }) {
 const SNIPPET_MAX_LENGTH = 150;
 
 function truncateText(text: string | null | undefined, maxLength: number): string | null {
-  if (!text || text.length === 0) return null;
+  if (!text) return null;
   if (text.length <= maxLength) return text;
   return `${text.slice(0, maxLength)}\u2026`;
 }
@@ -145,7 +145,10 @@ export default function MyReportsScreen() {
   }, []);
 
   function renderContent(): React.ReactNode {
-    const branch = isLoading ? "loading" : isEmpty ? "empty" : "list";
+    let branch: string;
+    if (isLoading) branch = "loading";
+    else if (isEmpty) branch = "empty";
+    else branch = "list";
     railwayLog("renderContent", {
       isLoading,
       isEmpty,

@@ -13,12 +13,12 @@ def is_s3_configured() -> bool:
     )
 
 
-def upload_to_s3(key: str, data: bytes, content_type: str) -> None:
-    """Upload bytes to S3 at the given key. Call only when is_s3_configured()."""
+def _get_s3_client():
+    """Create and return a boto3 S3 client. Call only when is_s3_configured()."""
     import boto3
     from botocore.client import Config
 
-    client = boto3.client(
+    return boto3.client(
         "s3",
         endpoint_url=settings.s3_endpoint_url,
         region_name=settings.s3_region or "auto",
@@ -26,7 +26,11 @@ def upload_to_s3(key: str, data: bytes, content_type: str) -> None:
         aws_secret_access_key=settings.s3_secret_key,
         config=Config(s3={"addressing_style": "virtual"}),
     )
-    client.put_object(
+
+
+def upload_to_s3(key: str, data: bytes, content_type: str) -> None:
+    """Upload bytes to S3 at the given key. Call only when is_s3_configured()."""
+    _get_s3_client().put_object(
         Bucket=settings.s3_bucket,
         Key=key,
         Body=data,
@@ -36,23 +40,11 @@ def upload_to_s3(key: str, data: bytes, content_type: str) -> None:
 
 def get_presigned_url(key: str, expires_in: int = 3600) -> str:
     """Return a time-limited URL to download the object. Call only when is_s3_configured()."""
-    import boto3
-    from botocore.client import Config
-
-    client = boto3.client(
-        "s3",
-        endpoint_url=settings.s3_endpoint_url,
-        region_name=settings.s3_region or "auto",
-        aws_access_key_id=settings.s3_access_key,
-        aws_secret_access_key=settings.s3_secret_key,
-        config=Config(s3={"addressing_style": "virtual"}),
-    )
-    url = client.generate_presigned_url(
+    return _get_s3_client().generate_presigned_url(
         "get_object",
         Params={"Bucket": settings.s3_bucket, "Key": key},
         ExpiresIn=expires_in,
     )
-    return url
 
 
 def media_url(storage_key: str) -> str:
@@ -65,19 +57,8 @@ def media_url(storage_key: str) -> str:
 def delete_file(storage_key: str) -> None:
     """Delete a file from S3 or local upload dir. Idempotent (no error if missing)."""
     if is_s3_configured():
-        import boto3
-        from botocore.client import Config
-
-        client = boto3.client(
-            "s3",
-            endpoint_url=settings.s3_endpoint_url,
-            region_name=settings.s3_region or "auto",
-            aws_access_key_id=settings.s3_access_key,
-            aws_secret_access_key=settings.s3_secret_key,
-            config=Config(s3={"addressing_style": "virtual"}),
-        )
         try:
-            client.delete_object(Bucket=settings.s3_bucket, Key=storage_key)
+            _get_s3_client().delete_object(Bucket=settings.s3_bucket, Key=storage_key)
         except Exception:
             pass
         return

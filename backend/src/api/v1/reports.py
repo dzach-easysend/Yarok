@@ -41,9 +41,7 @@ def _report_to_response(
             lat, lng = float(geom.y), float(geom.x)
         else:
             lat, lng = 0.0, 0.0
-    vc = view_count if view_count is not None else getattr(r, "view_count", 0)
-    if vc is None:
-        vc = 0
+    vc = view_count if view_count is not None else getattr(r, "view_count", 0) or 0
     return ReportResponse(
         id=r.id,
         lat=float(lat),
@@ -152,8 +150,8 @@ async def get_report(
         for m in media_rows
     ]
 
-    # Increment view count on each fetch (MVP; scale with report_views log if needed)
-    report.view_count = getattr(report, "view_count", 0) + 1
+    # Increment view count on each fetch (MVP; scale with report_views log table if needed)
+    report.view_count = (report.view_count or 0) + 1
     await db.flush()
 
     return _report_to_response(

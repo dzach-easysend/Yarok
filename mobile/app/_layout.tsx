@@ -37,7 +37,10 @@ export default function RootLayout() {
     };
     window.addEventListener("error", onError);
     window.addEventListener("unhandledrejection", onUnhandled);
-    return () => { window.removeEventListener("error", onError); window.removeEventListener("unhandledrejection", onUnhandled); };
+    return () => {
+      window.removeEventListener("error", onError);
+      window.removeEventListener("unhandledrejection", onUnhandled);
+    };
   }, []);
   // #endregion
 

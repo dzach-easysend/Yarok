@@ -235,10 +235,8 @@ export default function ReportDetailScreen() {
   });
 
   const uploadMediaMutation = useMutation({
-    mutationFn: async (args: { uri: string; file?: File }) => {
-      const { uri, file } = args;
-      return uploadMedia(id!, uri, file);
-    },
+    mutationFn: async (args: { uri: string; file?: File }) =>
+      uploadMedia(id!, args.uri, args.file),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["report", id] });
     },
@@ -400,12 +398,11 @@ export default function ReportDetailScreen() {
     );
   };
 
-  const carouselKey = (item: CarouselItem, index: number) =>
-    item.type === "map"
-      ? `map-${report.lat},${report.lng}`
-      : item.type === "media"
-        ? item.item.id
-        : `add-${index}`;
+  function carouselKey(item: CarouselItem, index: number): string {
+    if (item.type === "map") return `map-${report.lat},${report.lng}`;
+    if (item.type === "media") return item.item.id;
+    return `add-${index}`;
+  }
 
   return (
     <View style={styles.container} testID="screen-detail">

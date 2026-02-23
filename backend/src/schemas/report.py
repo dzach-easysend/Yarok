@@ -20,6 +20,17 @@ class ReportUpdate(BaseModel):
     status: str = Field(..., pattern="^(open|in_progress|cleaned|invalid)$")
 
 
+class ReportListQuery(BaseModel):
+    """Query parameters for listing reports within a radius."""
+
+    lat: float = Field(..., ge=-90, le=90)
+    lng: float = Field(..., ge=-180, le=180)
+    radius_km: float = Field(10, ge=0.1, le=500)
+    page: int = Field(1, ge=1)
+    limit: int = Field(20, ge=1, le=100)
+    status: Optional[str] = None
+
+
 class MediaItem(BaseModel):
     """Media item in API response."""
 
