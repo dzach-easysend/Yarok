@@ -110,30 +110,9 @@ export default function ReportDetailScreen() {
         emitEvent("dbg_setQueryData_CRASH");
         // #endregion
       }
-      try {
-        queryClient.setQueriesData(
-          { queryKey: ["my-reports"] },
-          (old: ReportListItem[] | undefined) =>
-            old
-              ? old.map((r) => (r.id === id ? { ...r, status: newStatus } : r))
-              : old,
-        );
-        queryClient.setQueriesData(
-          { queryKey: ["reports"] },
-          (old: ReportListItem[] | undefined) =>
-            old
-              ? old.map((r) => (r.id === id ? { ...r, status: newStatus } : r))
-              : old,
-        );
-        // #region agent log
-        emitEvent("dbg_setQueriesData_ok");
-        // #endregion
-      } catch (e) {
-        // #region agent log
-        railwayLog("dbg_setQueriesData_CRASH", { err: String(e), stack: (e as Error)?.stack?.slice(0, 500) }, "error");
-        emitEvent("dbg_setQueriesData_CRASH");
-        // #endregion
-      }
+      // #region agent log
+      emitEvent("dbg_setQueriesData_SKIPPED");
+      // #endregion
       try {
         queryClient.invalidateQueries({ queryKey: ["reports"], refetchType: "none" });
         queryClient.invalidateQueries({ queryKey: ["my-reports"], refetchType: "none" });
