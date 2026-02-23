@@ -98,7 +98,9 @@ export default function ReportDetailScreen() {
       emitEvent("status_updated");
       railwayLog("update status onSuccess", { platform: Platform.OS, reportId: id, newStatus });
       try {
-        queryClient.setQueryData(["report", id], data);
+        queryClient.setQueryData(["report", id], (old: ReportListItem | undefined) =>
+          old ? { ...old, status: data.status } : data,
+        );
         // #region agent log
         emitEvent("dbg_setQueryData_ok");
         // #endregion
