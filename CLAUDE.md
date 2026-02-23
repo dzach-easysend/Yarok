@@ -119,6 +119,17 @@ This applies to any static/preview map whose center needs to update after initia
 ### `StatusBar` style on light backgrounds
 Use `<StatusBar style="dark" />` when the app background is light — `"dark"` means dark-colored status bar icons (clock, battery, signal), which are readable on white/light-gray backgrounds. `"light"` is for dark backgrounds.
 
+### maplibre-gl `_loaded` crash (production-only)
+`@vis.gl/react-maplibre` has a bug in `maplibre.ts` where `map.style._loaded` is accessed without null-checking `map.style`. When a map component unmounts or re-renders while the style is loading/destroyed, `map.style` is null and the app crashes with `Cannot read properties of null (reading '_loaded')`. This only happens in production builds (different async timing). Two defenses are in place:
+1. **`MapErrorBoundary`** in `MapView.web.tsx` — catches errors during React lifecycle, shows "מפה לא זמינה" fallback instead of killing the app
+2. **Global error suppression** in `_layout.tsx` — `window.addEventListener("error", ...)` calls `event.preventDefault()` when the error includes `_loaded`, catching async maplibre-gl callbacks outside React's lifecycle
+
+### React Query cache updates must not trigger background MapView re-renders
+When updating report data via `queryClient.setQueryData` or `setQueriesData`, avoid triggering re-renders of background components that contain MapView instances. In `onSuccess` handlers:
+- Use `setQueryData` to merge only changed fields (e.g. `{ ...old, status: data.status }`) instead of replacing the entire cache entry
+- Prefer `invalidateQueries({ refetchType: "none" })` to mark queries stale without triggering immediate background refetches — the data will refresh when the user navigates back
+- Avoid `setQueriesData` for list queries when a MapView-heavy list is mounted in a background tab
+
 ---
 
 ## Common Mistakes to Avoid
@@ -135,3 +146,5 @@ Use `<StatusBar style="dark" />` when the app background is light — `"dark"` m
 - By default, in RTL languages: Don't left-align or center-align headlines or any other text unless directly asked for that. Bu default all text should align to the right with RTL languages (e.g. Hebrew)
 - Tab bar icons MUST always have visible text labels — never render icon-only tabs. Every `Tabs.Screen` must have a `title` prop and the tab bar must have sufficient `height` (≥ 68px) to display both icon and label without clipping
 - Never duplicate existing UI components — before adding any new UI element (search box, button, input, modal, etc.), search the codebase for an existing implementation of that element and reuse or extend it. Adding a second instance of an already-present component (e.g. a second search bar on the map screen) is always wrong
+- Production-only bugs: maplibre-gl and other native WebGL libraries behave differently in production (minified) builds vs. local dev. Never assume a fix works without verifying on the deployed environment. Use `railwayLog`/`emitEvent` instrumentation to get runtime evidence from production
+- PATCH endpoints that return partial data: Backend PATCH endpoints (e.g. `update_report`) may not load all relations (like `media_items`), returning `media: []`. Never use the PATCH response to replace the full cache entry — merge only the changed fields
