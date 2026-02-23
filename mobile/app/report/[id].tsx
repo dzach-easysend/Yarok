@@ -135,8 +135,8 @@ export default function ReportDetailScreen() {
         // #endregion
       }
       try {
-        queryClient.invalidateQueries({ queryKey: ["reports"] });
-        queryClient.invalidateQueries({ queryKey: ["my-reports"] });
+        queryClient.invalidateQueries({ queryKey: ["reports"], refetchType: "none" });
+        queryClient.invalidateQueries({ queryKey: ["my-reports"], refetchType: "none" });
         // #region agent log
         emitEvent("dbg_invalidate_ok");
         // #endregion
