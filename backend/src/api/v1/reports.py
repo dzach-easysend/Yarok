@@ -11,6 +11,7 @@ from src.database import get_db
 from src.models.media import Media
 from src.models.report import Report
 from src.schemas.report import MediaItem, ReportCreate, ReportResponse, ReportUpdate
+from src.storage import media_url
 
 router = APIRouter(prefix="/reports", tags=["reports"])
 
@@ -142,7 +143,7 @@ async def get_report(
     media_result = await db.execute(media_stmt)
     media_rows = media_result.scalars().all()
     media_items = [
-        MediaItem(id=m.id, media_type=m.media_type, url=f"/media/{m.storage_key}")
+        MediaItem(id=m.id, media_type=m.media_type, url=media_url(m.storage_key))
         for m in media_rows
     ]
 

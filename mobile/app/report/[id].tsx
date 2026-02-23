@@ -32,6 +32,26 @@ function getResponseStatus(err: unknown): number | undefined {
   return (err as { response?: { status?: number } })?.response?.status;
 }
 
+/** Renders a single report media tile; shows placeholder on load error (e.g. 404) so one broken image doesn't blank the screen. */
+function MediaTile({ uri, style }: { uri: string; style: object }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) {
+    return (
+      <View style={[style, { backgroundColor: colors.border, justifyContent: "center", alignItems: "center" }]}>
+        <Text style={styles.muted}>תמונה לא זמינה</Text>
+      </View>
+    );
+  }
+  return (
+    <Image
+      source={{ uri }}
+      style={style}
+      resizeMode="cover"
+      onError={() => setFailed(true)}
+    />
+  );
+}
+
 export default function ReportDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -173,10 +193,9 @@ export default function ReportDetailScreen() {
             style={styles.mediaStrip}
             contentContainerStyle={styles.mediaStripContent}
             renderItem={({ item }: { item: MediaItem }) => (
-              <Image
-                source={{ uri: `${API_BASE}${item.url}` }}
+              <MediaTile
+                uri={item.url.startsWith("http") ? item.url : `${API_BASE}${item.url}`}
                 style={styles.mediaTile}
-                resizeMode="cover"
               />
             )}
           />

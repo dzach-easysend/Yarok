@@ -11,6 +11,7 @@ from src.config import settings
 from src.database import get_db
 from src.models.media import Media
 from src.models.report import Report
+from src.storage import is_s3_configured, media_url, upload_to_s3
 
 router = APIRouter(prefix="/reports", tags=["media"])
 
@@ -74,9 +75,13 @@ async def upload_media(
 
     ext = _extension_for(content_type)
     filename = f"{uuid.uuid4().hex}{ext}"
-    upload_dir = _get_upload_dir()
-    filepath = upload_dir / filename
-    filepath.write_bytes(data)
+
+    if is_s3_configured():
+        upload_to_s3(filename, data, content_type)
+    else:
+        upload_dir = _get_upload_dir()
+        filepath = upload_dir / filename
+        filepath.write_bytes(data)
 
     media = Media(
         report_id=report_id,
@@ -92,7 +97,7 @@ async def upload_media(
         "id": media.id,
         "report_id": report_id,
         "media_type": media.media_type,
-        "url": f"/media/{filename}",
+        "url": media_url(filename),
         "file_size_bytes": len(data),
     }
 
@@ -116,7 +121,7 @@ async def list_media(
         {
             "id": m.id,
             "media_type": m.media_type,
-            "url": f"/media/{m.storage_key}",
+            "url": media_url(m.storage_key),
             "file_size_bytes": m.file_size_bytes,
         }
         for m in media_items

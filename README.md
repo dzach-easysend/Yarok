@@ -167,7 +167,7 @@ The project deploys to Railway as three services within one project.
 ### Notes
 
 - **Migrations** run automatically on each deploy via `start.sh` (`alembic upgrade head`).
-- **Media storage**: Railway containers are ephemeral. Configure S3 environment variables for persistent media uploads. Without S3, uploaded files are lost on redeploy.
+- **Media storage**: Railway containers are ephemeral. Use a [Railway Storage Bucket](https://docs.railway.com/storage-buckets) and configure S3 variables on yarok-api so uploads persist. **Step-by-step (no terminal):** [docs/RAILWAY_STORAGE_SETUP.md](docs/RAILWAY_STORAGE_SETUP.md). Without S3, uploaded files are lost on redeploy.
 - **Health check**: The backend exposes `/health` and `railway.toml` configures Railway to use it.
 - **PostGIS data**: The database volume persists across redeploys as long as the service is not deleted.
 - **Port**: Railway injects `$PORT` at runtime. The backend `start.sh` reads it automatically (defaults to 8000). Set the public domain target port to match (check deploy logs for the actual port).
