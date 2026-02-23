@@ -164,7 +164,10 @@ export default function MyReportsScreen() {
             <ReportCard
               key={item.id}
               item={item}
-              onPress={() => router.push(`/report/${item.id}`)}
+              onPress={() => {
+                railwayLog("navigating to report", { reportId: item.id });
+                router.push(`/report/${item.id}`);
+              }}
             />
           ))}
         </DragScrollView>
@@ -179,7 +182,10 @@ export default function MyReportsScreen() {
         renderItem={({ item }) => (
           <ReportCard
             item={item}
-            onPress={() => router.push(`/report/${item.id}`)}
+            onPress={() => {
+              railwayLog("navigating to report", { reportId: item.id });
+              router.push(`/report/${item.id}`);
+            }}
           />
         )}
       />

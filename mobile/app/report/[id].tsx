@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   getReport,
   updateReport,
@@ -67,6 +67,25 @@ export default function ReportDetailScreen() {
   });
 
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
+  const hasLoggedLoaded = useRef(false);
+  const hasLoggedError = useRef(false);
+
+  useEffect(() => {
+    railwayLog("ReportDetailScreen mounted", { platform: Platform.OS, reportId: id });
+  }, [id]);
+
+  useEffect(() => {
+    if (report && !isLoading && !hasLoggedLoaded.current) {
+      hasLoggedLoaded.current = true;
+      railwayLog("ReportDetailScreen report loaded", { reportId: id });
+    }
+  }, [report, isLoading, id]);
+  useEffect(() => {
+    if (isError && !hasLoggedError.current) {
+      hasLoggedError.current = true;
+      railwayLog("ReportDetailScreen report error", { reportId: id, error: String(error) });
+    }
+  }, [isError, id, error]);
 
   const updateMutation = useMutation({
     mutationFn: (status: string) => updateReport(id!, { status }),
@@ -111,6 +130,11 @@ export default function ReportDetailScreen() {
       queryClient.invalidateQueries({ queryKey: ["reports"] });
       queryClient.invalidateQueries({ queryKey: ["my-reports"] });
       railwayLog("before router.replace", { target: "/(tabs)/reports" });
+      // On web, router.replace can leave the app in a blank state (Expo Router stack). Use full-page navigation so the reports list always loads.
+      if (Platform.OS === "web" && typeof window !== "undefined") {
+        window.location.replace(`${window.location.origin}/reports`);
+        return;
+      }
       router.replace("/(tabs)/reports");
       railwayLog("after router.replace", {});
     },

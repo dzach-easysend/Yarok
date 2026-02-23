@@ -13,6 +13,7 @@ yarok/
     Dockerfile         # Production container (Railway / Docker)
     start.sh           # Entrypoint: runs migrations then uvicorn
     railway.toml       # Railway build & deploy config
+    src/storage.py     # S3-compatible storage (Railway bucket or local disk)
   mobile/              # Expo app (React Native) — iOS, Android, Web
     Dockerfile         # Web production build (Expo export + nginx)
     metro.config.js    # Metro bundler config (web shims, minifier)
@@ -20,7 +21,9 @@ yarok/
     railway.toml       # Railway build config
   mockups/             # HTML mockups (Hebrew UI)
   docs/                # Setup and project docs
-  docker-compose.yml   # Postgres + PostGIS (yarok-db)
+    SETUP_LOCAL.md     # Local dev setup (Docker DB, backend, mobile, .env)
+    RAILWAY_STORAGE_SETUP.md   # Railway Storage Bucket for persistent media
+  docker-compose.yml  # Postgres + PostGIS (yarok-db)
 ```
 
 **Local setup:** See [docs/SETUP_LOCAL.md](docs/SETUP_LOCAL.md) for step-by-step (Docker for DB, backend, mobile, .env).
@@ -41,9 +44,9 @@ Use `DATABASE_URL=postgresql+asyncpg://yarok:yarok@localhost:5432/yarok` in the 
 
 ```bash
 cd backend
-python3 -m venv .venv && source .venv/bin/activate   # or: rye sync
-pip install -e ".[dev]"
-cp .env.example .env   # set DATABASE_URL (see above), Redis, etc.
+source .venv/bin/activate   # or: rye sync (creates/uses .venv)
+pip install -e ".[dev]"     # if using venv; rye sync installs deps
+cp .env.example .env       # set DATABASE_URL (see above), S3 optional for local
 alembic upgrade head
 uvicorn src.main:app --reload
 ```
@@ -82,12 +85,12 @@ From the project root:
 
 ```bash
 cd backend
-source .venv/bin/activate
+source .venv/bin/activate   # or: rye sync
 ruff check . && ruff format .
 pytest
 ```
 
-If you don’t have a venv yet: `python3 -m venv .venv && source .venv/bin/activate && pip install -e ".[dev]"`.
+With Rye: `rye run ruff check . && rye run ruff format .` and `rye run pytest`. If you don’t have a venv yet: `python3 -m venv .venv && source .venv/bin/activate && pip install -e ".[dev]"` (or `rye sync`).
 
 ### App
 
@@ -134,6 +137,7 @@ The project deploys to Railway as three services within one project.
 3. Add two **GitHub Repo** services (or "New Service > GitHub Repo") pointing to this repository -- one for `backend/` and one for `mobile/`. Set the root directory for each.
 4. Configure environment variables per service (see below).
 5. Generate a public domain for `yarok-api` and `yarok-web` in the Railway dashboard (Settings > Networking > Generate Domain).
+6. **Persistent media (optional but recommended):** Follow [docs/RAILWAY_STORAGE_SETUP.md](docs/RAILWAY_STORAGE_SETUP.md) to add a Railway Storage Bucket and set S3 variables on yarok-api so uploads survive redeploys.
 
 ### Environment Variables
 

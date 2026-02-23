@@ -1,6 +1,7 @@
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { colors } from "@/constants/theme";
+import { railwayLog } from "@/utils/railwayLog";
 
 interface ScreenHeaderProps {
   title: string;
@@ -10,6 +11,7 @@ export default function ScreenHeader({ title }: ScreenHeaderProps) {
   const router = useRouter();
 
   function handleBack() {
+    railwayLog("ScreenHeader back pressed", { title });
     if (router.canGoBack()) {
       router.back();
     } else {

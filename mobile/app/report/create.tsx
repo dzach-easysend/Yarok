@@ -17,6 +17,7 @@ import * as ImagePicker from "expo-image-picker";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createReport, uploadMedia } from "@/services/api";
 import ScreenHeader from "@/components/ScreenHeader";
+import { railwayLog } from "@/utils/railwayLog";
 import { MapView, type MapCenter } from "@/components/map";
 import LocationPickerOverlay from "@/components/LocationPickerOverlay";
 import { colors, radii } from "@/constants/theme";
@@ -33,6 +34,10 @@ export default function CreateReportScreen() {
   const [contactInfo, setContactInfo] = useState("");
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    railwayLog("CreateReportScreen mounted", { platform: Platform.OS });
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -61,6 +66,7 @@ export default function CreateReportScreen() {
       return report;
     },
     onSuccess: () => {
+      railwayLog("CreateReportScreen create success", { platform: Platform.OS });
       queryClient.invalidateQueries({ queryKey: ["reports"] });
       queryClient.invalidateQueries({ queryKey: ["my-reports"] });
       router.replace("/(tabs)");

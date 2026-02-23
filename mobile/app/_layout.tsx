@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { View } from "react-native";
+import { View, Platform } from "react-native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -7,12 +7,17 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/contexts/AuthContext";
 import BackendBanner from "@/components/BackendBanner";
 import { health } from "@/services/api";
+import { railwayLog } from "@/utils/railwayLog";
 
 const queryClient = new QueryClient();
 
 export default function RootLayout() {
   const [backendOnline, setBackendOnline] = useState(true);
   const [dismissed, setDismissed] = useState(false);
+
+  useEffect(() => {
+    railwayLog("RootLayout mounted", { platform: Platform.OS });
+  }, []);
 
   useEffect(() => {
     health()
