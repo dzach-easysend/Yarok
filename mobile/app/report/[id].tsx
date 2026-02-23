@@ -91,29 +91,69 @@ export default function ReportDetailScreen() {
   const updateMutation = useMutation({
     mutationFn: (status: string) => updateReport(id!, { status }),
     onSuccess: (data, newStatus) => {
+      // #region agent log
+      emitEvent("dbg_onSuccess_entry");
+      railwayLog("dbg_onSuccess_entry", { dataMedia: data?.media?.length, dataStatus: data?.status, newStatus, reportId: id, cacheMediaLen: (queryClient.getQueryData(["report", id]) as ReportListItem | undefined)?.media?.length });
+      // #endregion
       emitEvent("status_updated");
       railwayLog("update status onSuccess", { platform: Platform.OS, reportId: id, newStatus });
-      // Update current report in cache so detail screen never refetches (refetch after status update caused blank on web)
-      queryClient.setQueryData(["report", id], data);
-      // Update report in list caches so navigating back never shows stale status
-      queryClient.setQueriesData(
-        { queryKey: ["my-reports"] },
-        (old: ReportListItem[] | undefined) =>
-          old
-            ? old.map((r) => (r.id === id ? { ...r, status: newStatus } : r))
-            : old,
-      );
-      queryClient.setQueriesData(
-        { queryKey: ["reports"] },
-        (old: ReportListItem[] | undefined) =>
-          old
-            ? old.map((r) => (r.id === id ? { ...r, status: newStatus } : r))
-            : old,
-      );
-      // Invalidate list queries only so lists refetch when user navigates back; do NOT invalidate ["report", id]
-      queryClient.invalidateQueries({ queryKey: ["reports"] });
-      queryClient.invalidateQueries({ queryKey: ["my-reports"] });
+      try {
+        queryClient.setQueryData(["report", id], data);
+        // #region agent log
+        emitEvent("dbg_setQueryData_ok");
+        // #endregion
+      } catch (e) {
+        // #region agent log
+        railwayLog("dbg_setQueryData_CRASH", { err: String(e), stack: (e as Error)?.stack?.slice(0, 500) }, "error");
+        emitEvent("dbg_setQueryData_CRASH");
+        // #endregion
+      }
+      try {
+        queryClient.setQueriesData(
+          { queryKey: ["my-reports"] },
+          (old: ReportListItem[] | undefined) =>
+            old
+              ? old.map((r) => (r.id === id ? { ...r, status: newStatus } : r))
+              : old,
+        );
+        queryClient.setQueriesData(
+          { queryKey: ["reports"] },
+          (old: ReportListItem[] | undefined) =>
+            old
+              ? old.map((r) => (r.id === id ? { ...r, status: newStatus } : r))
+              : old,
+        );
+        // #region agent log
+        emitEvent("dbg_setQueriesData_ok");
+        // #endregion
+      } catch (e) {
+        // #region agent log
+        railwayLog("dbg_setQueriesData_CRASH", { err: String(e), stack: (e as Error)?.stack?.slice(0, 500) }, "error");
+        emitEvent("dbg_setQueriesData_CRASH");
+        // #endregion
+      }
+      try {
+        queryClient.invalidateQueries({ queryKey: ["reports"] });
+        queryClient.invalidateQueries({ queryKey: ["my-reports"] });
+        // #region agent log
+        emitEvent("dbg_invalidate_ok");
+        // #endregion
+      } catch (e) {
+        // #region agent log
+        railwayLog("dbg_invalidateQueries_CRASH", { err: String(e), stack: (e as Error)?.stack?.slice(0, 500) }, "error");
+        emitEvent("dbg_invalidateQueries_CRASH");
+        // #endregion
+      }
+      // #region agent log
+      emitEvent("dbg_onSuccess_complete");
+      // #endregion
     },
+    // #region agent log
+    onError: (err) => {
+      railwayLog("dbg_mutation_error", { err: String(err), stack: (err as Error)?.stack?.slice(0, 500) }, "error");
+      emitEvent("dbg_mutation_error");
+    },
+    // #endregion
   });
 
   const deleteMutation = useMutation({
@@ -214,6 +254,10 @@ export default function ReportDetailScreen() {
   }
 
   const currentStatus = selectedStatus ?? report.status;
+
+  // #region agent log
+  railwayLog("dbg_detail_render", { reportId: report.id, status: report.status, mediaLen: report.media?.length, mediaCount: report.media_count, selectedStatus, currentStatus, mutationStatus: updateMutation.status });
+  // #endregion
 
   return (
     <View style={styles.container} testID="screen-detail">

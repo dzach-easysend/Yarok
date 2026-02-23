@@ -20,6 +20,23 @@ export default function RootLayout() {
     railwayLog("RootLayout mounted", { platform: Platform.OS });
   }, []);
 
+  // #region agent log
+  useEffect(() => {
+    if (Platform.OS !== "web" || typeof window === "undefined") return;
+    const onError = (event: ErrorEvent) => {
+      railwayLog("UNCAUGHT_ERROR", { message: event.message, filename: event.filename, lineno: event.lineno, colno: event.colno, stack: event.error?.stack?.slice(0, 500) }, "error");
+      emitEvent(`crash_${event.message?.slice(0, 80)}`);
+    };
+    const onUnhandled = (event: PromiseRejectionEvent) => {
+      railwayLog("UNHANDLED_REJECTION", { reason: String(event.reason), stack: (event.reason as Error)?.stack?.slice(0, 500) }, "error");
+      emitEvent(`rejection_${String(event.reason).slice(0, 80)}`);
+    };
+    window.addEventListener("error", onError);
+    window.addEventListener("unhandledrejection", onUnhandled);
+    return () => { window.removeEventListener("error", onError); window.removeEventListener("unhandledrejection", onUnhandled); };
+  }, []);
+  // #endregion
+
   useEffect(() => {
     health()
       .then(() => setBackendOnline(true))
