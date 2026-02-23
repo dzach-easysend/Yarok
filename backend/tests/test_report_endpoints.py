@@ -8,6 +8,7 @@ NOTE on mock side_effect ordering:
     here must be updated accordingly.
 """
 
+from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock
 from uuid import uuid4
 
@@ -401,3 +402,45 @@ class TestListReports:
             },
         )
         assert resp.status_code == 422
+
+    @pytest.mark.asyncio
+    async def test_list_reports_ordered_by_created_at_desc(self, client, mock_db):
+        """GET /reports returns results in created_at descending order (newest first)."""
+        base = datetime.now(timezone.utc)
+        report_old = make_report(
+            description="Older",
+            lat=32.0,
+            lng=34.0,
+            created_at=base - timedelta(hours=2),
+        )
+        report_new = make_report(
+            description="Newer",
+            lat=32.0,
+            lng=34.0,
+            created_at=base - timedelta(hours=1),
+        )
+        row_old = make_report_row(report_old, lat=32.0, lng=34.0)
+        row_new = make_report_row(report_new, lat=32.0, lng=34.0)
+        # Simulate DB returning rows in ORDER BY created_at DESC order (newest first)
+        mock_db.execute = AsyncMock(
+            side_effect=[
+                make_execute_result(all_rows=[row_new, row_old]),
+                make_execute_result(scalar_value=0),
+                make_execute_result(scalar_value=0),
+            ]
+        )
+
+        resp = await client.get(
+            "/api/v1/reports",
+            params={"lat": 32.0, "lng": 34.0},
+        )
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data) == 2
+        assert data[0]["description"] == "Newer"
+        assert data[1]["description"] == "Older"
+        # created_at should be descending (newest first)
+        t0 = datetime.fromisoformat(data[0]["created_at"].replace("Z", "+00:00"))
+        t1 = datetime.fromisoformat(data[1]["created_at"].replace("Z", "+00:00"))
+        assert t0 >= t1

@@ -160,6 +160,7 @@ def make_report(
     description: Optional[str] = "Test report",
     contact_info: Optional[str] = None,
     status: str = "open",
+    created_at: Optional[datetime] = None,
 ):
     """Return a SimpleNamespace that quacks like a Report ORM object.
 
@@ -167,6 +168,7 @@ def make_report(
     `_report_to_response` can extract coordinates without PostGIS.
     """
     location = SimpleNamespace(x=lng, y=lat)
+    now = datetime.now(timezone.utc)
     return SimpleNamespace(
         id=id or str(uuid4()),
         user_id=user_id,
@@ -176,8 +178,8 @@ def make_report(
         description=description,
         contact_info=contact_info,
         status=status,
-        created_at=datetime.now(timezone.utc),
-        updated_at=datetime.now(timezone.utc),
+        created_at=created_at if created_at is not None else now,
+        updated_at=now,
     )
 
 

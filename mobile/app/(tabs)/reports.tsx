@@ -15,6 +15,10 @@ import { getReports, type ReportListItem } from "@/services/api";
 import { statusLabel } from "@/utils/statusLabel";
 import { railwayLog, emitEvent } from "@/utils/railwayLog";
 import { colors, spacing, radii } from "@/constants/theme";
+import {
+  REPORT_CARD_DATE_LABEL,
+  REPORT_CARD_DESC_LABEL,
+} from "@/constants/reportCardLabels";
 import DragScrollView from "@/components/DragScrollView";
 import { MapView } from "@/components/map";
 
@@ -72,6 +76,7 @@ function formatCreationDate(isoString: string): string {
   });
 }
 
+
 function ReportCard({ item, onPress }: { item: ReportListItem; onPress: () => void }) {
   const snippet = truncateText(item.description, SNIPPET_MAX_LENGTH);
 
@@ -95,6 +100,7 @@ function ReportCard({ item, onPress }: { item: ReportListItem; onPress: () => vo
       <View style={styles.cardBody}>
         {snippet ? (
           <Text testID="report-card-desc" style={styles.snippet}>
+            {REPORT_CARD_DESC_LABEL}
             {snippet}
           </Text>
         ) : null}
@@ -102,7 +108,10 @@ function ReportCard({ item, onPress }: { item: ReportListItem; onPress: () => vo
           <View style={styles.statusBadge}>
             <Text style={styles.statusText}>{statusLabel(item.status)}</Text>
           </View>
-          <Text style={styles.meta}>{formatCreationDate(item.created_at)}</Text>
+          <Text testID="report-card-date" style={styles.meta}>
+            {REPORT_CARD_DATE_LABEL}
+            {formatCreationDate(item.created_at)}
+          </Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -221,9 +230,18 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "transparent",
+    borderColor: colors.border,
+    // Card shadow: iOS + Android + web
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+    ...(Platform.OS === "web"
+      ? { boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }
+      : {}),
   },
-  thumb: { height: 120, overflow: "hidden" },
+  thumb: { height: 180, overflow: "hidden" },
   cardBody: {
     padding: 12,
     alignItems: "flex-end",

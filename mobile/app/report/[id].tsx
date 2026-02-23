@@ -110,9 +110,21 @@ export default function ReportDetailScreen() {
         emitEvent("dbg_setQueryData_CRASH");
         // #endregion
       }
-      // #region agent log
-      emitEvent("dbg_setQueriesData_SKIPPED");
-      // #endregion
+      // Update list caches so My Reports (and any reports list) shows the new status without refetch
+      try {
+        queryClient.setQueriesData(
+          { queryKey: ["my-reports"] },
+          (old: ReportListItem[] | undefined) =>
+            old?.map((r) => (r.id === id ? { ...r, status: data.status } : r)) ?? old,
+        );
+        queryClient.setQueriesData(
+          { queryKey: ["reports"] },
+          (old: ReportListItem[] | undefined) =>
+            old?.map((r) => (r.id === id ? { ...r, status: data.status } : r)) ?? old,
+        );
+      } catch (e) {
+        railwayLog("setQueriesData list status", { err: String(e) }, "error");
+      }
       try {
         queryClient.invalidateQueries({ queryKey: ["reports"], refetchType: "none" });
         queryClient.invalidateQueries({ queryKey: ["my-reports"], refetchType: "none" });

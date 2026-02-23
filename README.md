@@ -23,6 +23,7 @@ yarok/
   docs/                # Setup and project docs
     SETUP_LOCAL.md     # Local dev setup (Docker DB, backend, mobile, .env)
     RAILWAY_STORAGE_SETUP.md   # Railway Storage Bucket for persistent media
+    RAILWAY_PURGE_DATABASE.md  # Purging reports on Railway (e.g. before demo)
   docker-compose.yml  # Postgres + PostGIS (yarok-db)
 ```
 
@@ -110,7 +111,7 @@ python scripts/purge_reports.py --force    # skip confirmation prompt
 python scripts/purge_reports.py --dry-run  # show counts only, no changes
 ```
 
-The script deletes local media files under `uploads/`, removes S3 objects if S3 is configured, then `TRUNCATE`s the `reports` table (cascading to `media`).
+The script deletes local media files under `uploads/`, removes S3 objects if S3 is configured, then `TRUNCATE`s the `reports` table (cascading to `media`). **On Railway:** see [docs/RAILWAY_PURGE_DATABASE.md](docs/RAILWAY_PURGE_DATABASE.md) for purging the deployed database (e.g. before a demo).
 
 ### E2E (backend + Expo web must be running)
 
