@@ -26,6 +26,10 @@ export default function RootLayout() {
     const onError = (event: ErrorEvent) => {
       railwayLog("UNCAUGHT_ERROR", { message: event.message, filename: event.filename, lineno: event.lineno, colno: event.colno, stack: event.error?.stack?.slice(0, 500) }, "error");
       emitEvent(`crash_${event.message?.slice(0, 80)}`);
+      if (event.message?.includes("_loaded")) {
+        event.preventDefault();
+        emitEvent("maplibre_error_suppressed");
+      }
     };
     const onUnhandled = (event: PromiseRejectionEvent) => {
       railwayLog("UNHANDLED_REJECTION", { reason: String(event.reason), stack: (event.reason as Error)?.stack?.slice(0, 500) }, "error");

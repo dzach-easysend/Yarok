@@ -3,13 +3,42 @@
  * Used when running via `npx expo start --web`.
  */
 
-import { useRef, useCallback, useEffect } from "react";
-import { View, StyleSheet } from "react-native";
+import React, { useRef, useCallback, useEffect } from "react";
+import { View, Text, StyleSheet } from "react-native";
 import MapGL, { Marker, type ViewStateChangeEvent, type MapRef } from "react-map-gl/dist/maplibre.js";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { MapViewProps, MapCenter } from "./types";
 import { OSM_MAP_STYLE } from "./types";
 import { MapControls } from "./MapControls";
+import { emitEvent } from "@/utils/railwayLog";
+
+class MapErrorBoundary extends React.Component<
+  { children: React.ReactNode; style?: object },
+  { hasError: boolean }
+> {
+  state = { hasError: false };
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error) {
+    // #region agent log
+    emitEvent(`map_error_boundary_caught_${error.message?.slice(0, 60)}`);
+    // #endregion
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <View style={[{ backgroundColor: "#e0e0e0", justifyContent: "center", alignItems: "center" }, this.props.style]}>
+          <Text style={{ color: "#666", fontSize: 12 }}>מפה לא זמינה</Text>
+        </View>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 function applyFlyTo(mapRef: React.RefObject<MapRef | null>, flyTo: { center: MapCenter; zoom: number } | null | undefined) {
   if (!flyTo || !mapRef.current) return;
@@ -106,54 +135,56 @@ export default function MapView({
   }, []);
 
   return (
-    <View style={[styles.container, style]}>
-      <MapGL
-          ref={mapRef}
-          initialViewState={{
-            latitude: center.lat,
-            longitude: center.lng,
-            zoom,
-          }}
-          style={{ width: "100%", height: "100%" }}
-          mapStyle={OSM_MAP_STYLE}
-          onLoad={handleLoad}
-          onMoveEnd={handleMoveEnd}
-          scrollZoom={interactive}
-          dragPan={interactive}
-          dragRotate={false}
-          pitchWithRotate={false}
-          touchZoomRotate={interactive}
-          doubleClickZoom={interactive}
-          attributionControl={false}
-        >
-          {markers.map((m) => (
-            <Marker
-              key={m.id}
-              latitude={m.lat}
-              longitude={m.lng}
-              onClick={() => onMarkerPress?.(m.id)}
-            >
-              <div
-                style={{
-                  width: 16,
-                  height: 16,
-                  borderRadius: 8,
-                  backgroundColor: m.color || "#1a73e8",
-                  border: "2px solid #fff",
-                  cursor: "pointer",
-                }}
-              />
-            </Marker>
-          ))}
-        </MapGL>
-        {interactive && (
-          <MapControls
-            onZoomIn={handleZoomIn}
-            onZoomOut={handleZoomOut}
-            onLocateMe={handleLocateMe}
-          />
-        )}
-    </View>
+    <MapErrorBoundary style={style}>
+      <View style={[styles.container, style]}>
+        <MapGL
+            ref={mapRef}
+            initialViewState={{
+              latitude: center.lat,
+              longitude: center.lng,
+              zoom,
+            }}
+            style={{ width: "100%", height: "100%" }}
+            mapStyle={OSM_MAP_STYLE}
+            onLoad={handleLoad}
+            onMoveEnd={handleMoveEnd}
+            scrollZoom={interactive}
+            dragPan={interactive}
+            dragRotate={false}
+            pitchWithRotate={false}
+            touchZoomRotate={interactive}
+            doubleClickZoom={interactive}
+            attributionControl={false}
+          >
+            {markers.map((m) => (
+              <Marker
+                key={m.id}
+                latitude={m.lat}
+                longitude={m.lng}
+                onClick={() => onMarkerPress?.(m.id)}
+              >
+                <div
+                  style={{
+                    width: 16,
+                    height: 16,
+                    borderRadius: 8,
+                    backgroundColor: m.color || "#1a73e8",
+                    border: "2px solid #fff",
+                    cursor: "pointer",
+                  }}
+                />
+              </Marker>
+            ))}
+          </MapGL>
+          {interactive && (
+            <MapControls
+              onZoomIn={handleZoomIn}
+              onZoomOut={handleZoomOut}
+              onLocateMe={handleLocateMe}
+            />
+          )}
+      </View>
+    </MapErrorBoundary>
   );
 }
 
