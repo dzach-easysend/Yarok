@@ -3,7 +3,7 @@
 from typing import Any, Optional
 
 from geoalchemy2 import Geometry
-from sqlalchemy import ForeignKey, String, Text
+from sqlalchemy import ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -36,6 +36,7 @@ class Report(Base, TimestampMixin):
     status: Mapped[str] = mapped_column(
         String(32), default="open"
     )  # open, in_progress, cleaned, invalid
+    view_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
     user = relationship("User", back_populates="reports", foreign_keys=[user_id])
     media = relationship("Media", back_populates="report", cascade="all, delete-orphan")

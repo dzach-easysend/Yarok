@@ -160,3 +160,56 @@ class TestListMedia:
         resp = await client.get(f"/api/v1/reports/{uuid4()}/media")
 
         assert resp.status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# DELETE /api/v1/reports/{report_id}/media/{media_id}
+# ---------------------------------------------------------------------------
+
+
+class TestDeleteMedia:
+    """Tests for deleting a single media item."""
+
+    @pytest.mark.asyncio
+    async def test_delete_media_success(self, client, mock_db):
+        report = make_report()
+        media1 = make_media(id="m1", report_id=report.id, storage_key="a.jpg")
+        make_media(id="m2", report_id=report.id, storage_key="b.jpg")
+        mock_db.execute = AsyncMock(
+            side_effect=[
+                make_execute_result(scalar_one_or_none_value=media1),
+                make_execute_result(scalar_value=2),
+            ]
+        )
+
+        with patch("src.api.v1.media.delete_file") as mock_delete:
+            resp = await client.delete(f"/api/v1/reports/{report.id}/media/m1")
+
+        assert resp.status_code == 204
+        mock_delete.assert_called_once_with("a.jpg")
+
+    @pytest.mark.asyncio
+    async def test_delete_media_not_found(self, client, mock_db):
+        mock_db.execute = AsyncMock(
+            return_value=make_execute_result(scalar_one_or_none_value=None),
+        )
+
+        resp = await client.delete(f"/api/v1/reports/{uuid4()}/media/{uuid4()}")
+
+        assert resp.status_code == 404
+
+    @pytest.mark.asyncio
+    async def test_delete_media_last_image_returns_400(self, client, mock_db):
+        report = make_report()
+        media = make_media(id="m1", report_id=report.id, storage_key="only.jpg")
+        mock_db.execute = AsyncMock(
+            side_effect=[
+                make_execute_result(scalar_one_or_none_value=media),
+                make_execute_result(scalar_value=1),
+            ]
+        )
+
+        resp = await client.delete(f"/api/v1/reports/{report.id}/media/m1")
+
+        assert resp.status_code == 400
+        assert "last" in resp.json()["detail"].lower()

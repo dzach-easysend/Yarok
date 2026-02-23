@@ -161,6 +161,7 @@ def make_report(
     contact_info: Optional[str] = None,
     status: str = "open",
     created_at: Optional[datetime] = None,
+    view_count: int = 0,
 ):
     """Return a SimpleNamespace that quacks like a Report ORM object.
 
@@ -180,6 +181,7 @@ def make_report(
         status=status,
         created_at=created_at if created_at is not None else now,
         updated_at=now,
+        view_count=view_count,
     )
 
 

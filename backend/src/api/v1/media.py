@@ -4,14 +4,14 @@ import uuid
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.config import settings
 from src.database import get_db
 from src.models.media import Media
 from src.models.report import Report
-from src.storage import is_s3_configured, media_url, upload_to_s3
+from src.storage import delete_file, is_s3_configured, media_url, upload_to_s3
 
 router = APIRouter(prefix="/reports", tags=["media"])
 
@@ -140,3 +140,35 @@ def _extension_for(content_type: str) -> str:
         "video/webm": ".webm",
     }
     return mapping.get(content_type, ".bin")
+
+
+@router.delete("/{report_id}/media/{media_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_media(
+    report_id: str,
+    media_id: str,
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    """Delete a media item. Only allowed if report has more than one media (cannot delete last)."""
+    stmt = select(Media).where(
+        Media.id == media_id,
+        Media.report_id == report_id,
+    )
+    result = await db.execute(stmt)
+    media = result.scalar_one_or_none()
+    if not media:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Media not found")
+
+    count_result = await db.execute(
+        select(func.count(Media.id)).where(Media.report_id == report_id)
+    )
+    n = count_result.scalar() or 0
+    if n <= 1:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot delete the last image",
+        )
+
+    storage_key = media.storage_key
+    await db.delete(media)
+    await db.flush()
+    delete_file(storage_key)

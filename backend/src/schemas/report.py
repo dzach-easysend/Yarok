@@ -40,5 +40,6 @@ class ReportResponse(BaseModel):
     created_at: str
     media_count: int = 0
     media: list[MediaItem] = []
+    view_count: int = 0
 
     model_config = {"from_attributes": True}

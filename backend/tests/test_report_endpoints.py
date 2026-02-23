@@ -121,6 +121,8 @@ class TestGetReport:
         assert data["media_count"] == 2
         assert len(data["media"]) == 2
         assert data["media"][0]["url"] == f"/media/{media1.storage_key}"
+        assert "view_count" in data
+        assert data["view_count"] == 1
 
     @pytest.mark.asyncio
     async def test_get_report_not_found(self, client, mock_db):
@@ -150,7 +152,7 @@ class TestGetReport:
 
     @pytest.mark.asyncio
     async def test_get_report_returns_invalid_status(self, client, mock_db):
-        """GET by ID returns report even when status is invalid (so detail screen works after update)."""
+        """GET by ID returns report even when status is invalid."""
         report = make_report(status="invalid")
         row = make_report_row(report, lat=report.location.y, lng=report.location.x)
         mock_db.execute = AsyncMock(
@@ -164,6 +166,24 @@ class TestGetReport:
 
         assert resp.status_code == 200
         assert resp.json()["status"] == "invalid"
+
+    @pytest.mark.asyncio
+    async def test_get_report_increments_view_count(self, client, mock_db):
+        """GET /reports/{id} increments view_count and returns it in the response."""
+        report = make_report(view_count=5)
+        row = make_report_row(report, lat=report.location.y, lng=report.location.x)
+        mock_db.execute = AsyncMock(
+            side_effect=[
+                make_execute_result(first_row=row),
+                make_execute_result(scalars_all=[]),
+            ]
+        )
+
+        resp = await client.get(f"/api/v1/reports/{report.id}")
+
+        assert resp.status_code == 200
+        assert resp.json()["view_count"] == 6
+        mock_db.flush.assert_called()
 
 
 # ---------------------------------------------------------------------------

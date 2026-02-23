@@ -30,6 +30,7 @@ export interface ReportListItem {
   created_at: string;
   media_count: number;
   media: MediaItem[];
+  view_count: number;
 }
 
 export interface ReportCreatePayload {
@@ -72,6 +73,10 @@ export async function updateReport(
 
 export async function deleteReport(id: string): Promise<void> {
   await api.delete(`/api/v1/reports/${id}`);
+}
+
+export async function deleteMedia(reportId: string, mediaId: string): Promise<void> {
+  await api.delete(`/api/v1/reports/${reportId}/media/${mediaId}`);
 }
 
 export async function health(): Promise<{ status: string }> {

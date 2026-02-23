@@ -1,7 +1,5 @@
 """S3-compatible storage: upload and presigned URLs for private buckets (e.g. Railway)."""
 
-from typing import Optional
-
 from src.config import settings
 
 
@@ -58,7 +56,36 @@ def get_presigned_url(key: str, expires_in: int = 3600) -> str:
 
 
 def media_url(storage_key: str) -> str:
-    """Return the URL to use for this media: presigned S3 URL if S3 is configured, else /media/key."""
+    """Presigned S3 URL if configured, else /media/key."""
     if is_s3_configured():
         return get_presigned_url(storage_key)
     return f"/media/{storage_key}"
+
+
+def delete_file(storage_key: str) -> None:
+    """Delete a file from S3 or local upload dir. Idempotent (no error if missing)."""
+    if is_s3_configured():
+        import boto3
+        from botocore.client import Config
+
+        client = boto3.client(
+            "s3",
+            endpoint_url=settings.s3_endpoint_url,
+            region_name=settings.s3_region or "auto",
+            aws_access_key_id=settings.s3_access_key,
+            aws_secret_access_key=settings.s3_secret_key,
+            config=Config(s3={"addressing_style": "virtual"}),
+        )
+        try:
+            client.delete_object(Bucket=settings.s3_bucket, Key=storage_key)
+        except Exception:
+            pass
+        return
+    from pathlib import Path
+
+    upload_dir = Path(settings.media_upload_dir)
+    if not upload_dir.is_absolute():
+        upload_dir = Path(__file__).resolve().parents[1] / upload_dir
+    filepath = upload_dir / storage_key
+    if filepath.is_file():
+        filepath.unlink()

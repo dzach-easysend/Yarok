@@ -17,10 +17,14 @@ import {
   getReport,
   updateReport,
   deleteReport,
+  deleteMedia,
+  uploadMedia,
   type MediaItem,
   type ReportListItem,
 } from "@/services/api";
+import * as ImagePicker from "expo-image-picker";
 import ScreenHeader from "@/components/ScreenHeader";
+import HorizontalDragScrollView from "@/components/HorizontalDragScrollView";
 import { MapView } from "@/components/map";
 import { statusLabel, STATUS_OPTIONS } from "@/utils/statusLabel";
 import { railwayLog, emitEvent } from "@/utils/railwayLog";
@@ -32,23 +36,47 @@ function getResponseStatus(err: unknown): number | undefined {
   return (err as { response?: { status?: number } })?.response?.status;
 }
 
-/** Renders a single report media tile; shows placeholder on load error (e.g. 404) so one broken image doesn't blank the screen. */
-function MediaTile({ uri, style }: { uri: string; style: object }) {
+type CarouselItem =
+  | { type: "map" }
+  | { type: "media"; item: MediaItem }
+  | { type: "add" };
+
+/** Renders a single report media tile; optional delete overlay for owner. */
+function MediaTile({
+  uri,
+  style,
+  onDelete,
+}: {
+  uri: string;
+  style: object;
+  onDelete?: () => void;
+}) {
   const [failed, setFailed] = useState(false);
   if (failed) {
     return (
       <View style={[style, { backgroundColor: colors.border, justifyContent: "center", alignItems: "center" }]}>
-        <Text style={styles.muted}>תמונה לא זמינה</Text>
+        <Text style={[styles.muted, { textAlign: "right" }]}>תמונה לא זמינה</Text>
       </View>
     );
   }
   return (
-    <Image
-      source={{ uri }}
-      style={style}
-      resizeMode="cover"
-      onError={() => setFailed(true)}
-    />
+    <View style={[style, { position: "relative" }]}>
+      <Image
+        source={{ uri }}
+        style={[StyleSheet.absoluteFill, { borderRadius: 12 }]}
+        resizeMode="cover"
+        onError={() => setFailed(true)}
+      />
+      {onDelete ? (
+        <TouchableOpacity
+          onPress={onDelete}
+          style={styles.mediaDeleteBtn}
+          accessibilityLabel="מחק תמונה"
+        >
+          <Text style={styles.mediaDeleteBtnText}>🗑</Text>
+        </TouchableOpacity>
+      ) : null}
+    </View>
   );
 }
 
@@ -187,6 +215,70 @@ export default function ReportDetailScreen() {
     },
   });
 
+  const deleteMediaMutation = useMutation({
+    mutationFn: (mediaId: string) => deleteMedia(id!, mediaId),
+    onSuccess: (_, mediaId) => {
+      queryClient.setQueryData(["report", id], (old: ReportListItem | undefined) => {
+        if (!old) return old;
+        const media = (old.media || []).filter((m) => m.id !== mediaId);
+        return { ...old, media, media_count: media.length };
+      });
+    },
+    onError: (err: unknown) => {
+      const status = getResponseStatus(err);
+      if (status === 400) {
+        Alert.alert("לא ניתן למחוק", "לא ניתן למחוק את התמונה האחרונה.");
+      } else {
+        railwayLog("delete media failed", { err: String(err), reportId: id }, "error");
+      }
+    },
+  });
+
+  const uploadMediaMutation = useMutation({
+    mutationFn: async (args: { uri: string; file?: File }) => {
+      const { uri, file } = args;
+      return uploadMedia(id!, uri, file);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["report", id] });
+    },
+    onError: (e: Error) => {
+      Alert.alert("שגיאה", e.message || "לא ניתן להוסיף תמונה");
+    },
+  });
+
+  const handleDeleteMedia = (mediaId: string) => {
+    if (Platform.OS === "web") {
+      if (typeof window !== "undefined" && window.confirm("למחוק תמונה זו?")) {
+        deleteMediaMutation.mutate(mediaId);
+      }
+      return;
+    }
+    Alert.alert("מחיקת תמונה", "למחוק תמונה זו?", [
+      { text: "ביטול", style: "cancel" },
+      {
+        text: "מחק",
+        style: "destructive",
+        onPress: () => deleteMediaMutation.mutate(mediaId),
+      },
+    ]);
+  };
+
+  const pickAndAddMedia = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images", "videos"],
+      allowsMultipleSelection: true,
+      quality: 0.8,
+      videoMaxDuration: 10,
+    });
+    if (!result.canceled && result.assets.length) {
+      for (const asset of result.assets) {
+        const file = "file" in asset && asset.file instanceof File ? asset.file : undefined;
+        await uploadMediaMutation.mutateAsync({ uri: asset.uri, file });
+      }
+    }
+  };
+
   function handleDelete() {
     if (Platform.OS === "web") {
       if (typeof window !== "undefined" && window.confirm("מחיקת דיווח\nלמחוק דיווח זה?")) {
@@ -252,54 +344,111 @@ export default function ReportDetailScreen() {
   railwayLog("dbg_detail_render", { reportId: report.id, status: report.status, mediaLen: report.media?.length, mediaCount: report.media_count, selectedStatus, currentStatus, mutationStatus: updateMutation.status });
   // #endregion
 
+  const mediaList = report.media ?? [];
+  const carouselItems: CarouselItem[] = [
+    { type: "map" },
+    ...mediaList.map((item) => ({ type: "media" as const, item })),
+    { type: "add" },
+  ];
+
+  const reportDate = report.created_at
+    ? new Date(report.created_at).toLocaleDateString("he-IL", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      })
+    : "";
+
+  const renderCarouselItem = (item: CarouselItem) => {
+    if (item.type === "map") {
+      return (
+        <View style={styles.carouselMapWrap}>
+          <MapView
+            key={`${report.lat},${report.lng}`}
+            center={{ lat: report.lat, lng: report.lng }}
+            zoom={15}
+            markers={[{ id: report.id, lat: report.lat, lng: report.lng }]}
+            interactive={false}
+            style={styles.carouselMap}
+          />
+        </View>
+      );
+    }
+    if (item.type === "media") {
+      const url = item.item.url.startsWith("http") ? item.item.url : `${API_BASE}${item.item.url}`;
+      const canDelete = mediaList.length > 1;
+      return (
+        <MediaTile
+          uri={url}
+          style={styles.mediaTile}
+          onDelete={canDelete ? () => handleDeleteMedia(item.item.id) : undefined}
+        />
+      );
+    }
+    return (
+      <TouchableOpacity
+        style={styles.addMediaTile}
+        onPress={pickAndAddMedia}
+        disabled={uploadMediaMutation.isPending}
+      >
+        {uploadMediaMutation.isPending ? (
+          <ActivityIndicator color={colors.muted} />
+        ) : (
+          <Text style={styles.addMediaTileText}>+ הוסף תמונה</Text>
+        )}
+      </TouchableOpacity>
+    );
+  };
+
+  const carouselKey = (item: CarouselItem, index: number) =>
+    item.type === "map"
+      ? `map-${report.lat},${report.lng}`
+      : item.type === "media"
+        ? item.item.id
+        : `add-${index}`;
+
   return (
     <View style={styles.container} testID="screen-detail">
       <ScreenHeader title="דיווח" />
       <ScrollView testID="detail-content" style={styles.scroll} contentContainerStyle={styles.scrollContent}>
-        {report.media && report.media.length > 0 ? (
-          <FlatList
-            data={report.media}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            keyExtractor={(item: MediaItem) => item.id}
+        {Platform.OS === "web" ? (
+          <HorizontalDragScrollView
             style={styles.mediaStrip}
             contentContainerStyle={styles.mediaStripContent}
-            renderItem={({ item }: { item: MediaItem }) => (
-              <MediaTile
-                uri={item.url.startsWith("http") ? item.url : `${API_BASE}${item.url}`}
-                style={styles.mediaTile}
-              />
-            )}
-          />
+            testID="report-carousel"
+          >
+            {carouselItems.map((item, index) => (
+              <View key={carouselKey(item, index)}>{renderCarouselItem(item)}</View>
+            ))}
+          </HorizontalDragScrollView>
         ) : (
-          <View style={styles.mediaStrip}>
-            <View style={styles.mediaTileEmpty}>
-              <Text style={styles.muted}>אין תמונות</Text>
-            </View>
-          </View>
+          <FlatList
+            data={carouselItems}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            keyExtractor={carouselKey}
+            style={styles.mediaStrip}
+            contentContainerStyle={styles.mediaStripContent}
+            renderItem={({ item }) => <View>{renderCarouselItem(item)}</View>}
+          />
         )}
 
         <View style={styles.body}>
+          <Text style={[styles.muted, { marginBottom: 4 }]} testID="report-date">
+            תאריך דיווח: {reportDate}
+          </Text>
+          <Text style={[styles.muted, { marginBottom: 12 }]}>
+            צפיות: {report.view_count ?? 0}
+          </Text>
           <View style={styles.meta}>
             <View testID="status-badge" style={styles.statusBadge}>
               <Text style={styles.statusText}>{statusLabel(report.status)}</Text>
             </View>
-            <Text style={styles.muted}>
-              {report.address || "ללא כתובת"} · {report.media_count} תמונות
-            </Text>
           </View>
 
           {report.description ? (
             <Text testID="detail-description" style={styles.description}>{report.description}</Text>
           ) : null}
-
-          <MapView
-            center={{ lat: report.lat, lng: report.lng }}
-            zoom={15}
-            markers={[{ id: report.id, lat: report.lat, lng: report.lng }]}
-            interactive={false}
-            style={styles.miniMap}
-          />
 
           <Text style={styles.sectionLabel}>עדכון סטטוס</Text>
           <View style={styles.statusRow}>
@@ -359,21 +508,39 @@ const styles = StyleSheet.create({
   scrollContent: { paddingBottom: 80 },
   mediaStrip: { height: 240, backgroundColor: colors.surface },
   mediaStripContent: { gap: 8, padding: 16 },
+  carouselMapWrap: { width: 320, height: 220, borderRadius: 12, overflow: "hidden", backgroundColor: colors.border },
+  carouselMap: { width: 320, height: 220, borderRadius: 12 },
   mediaTile: {
     width: 200,
     height: 208,
     borderRadius: 12,
     backgroundColor: colors.border,
   },
-  mediaTileEmpty: {
-    flex: 1,
+  mediaDeleteBtn: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 10,
+  },
+  mediaDeleteBtnText: { fontSize: 16 },
+  addMediaTile: {
+    width: 200,
     height: 208,
-    margin: 16,
     borderRadius: 12,
     backgroundColor: colors.border,
     justifyContent: "center",
     alignItems: "center",
+    borderWidth: 2,
+    borderStyle: "dashed",
+    borderColor: colors.muted,
   },
+  addMediaTileText: { fontSize: 15, color: colors.muted, textAlign: "right" },
   body: { padding: 16 },
   meta: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 },
   statusBadge: {
@@ -385,7 +552,6 @@ const styles = StyleSheet.create({
   statusText: { color: colors.primary, fontWeight: "500", fontSize: 12, textAlign: "right" },
   muted: { fontSize: 12, color: colors.muted, textAlign: "right" },
   description: { fontSize: 15, color: colors.text, lineHeight: 22, marginBottom: 16, textAlign: "right" },
-  miniMap: { height: 180, borderRadius: 12, overflow: "hidden", marginBottom: 16 },
   sectionLabel: { fontSize: 11, color: colors.muted, marginBottom: 8, textAlign: "right" },
   statusRow: { flexDirection: "row", gap: 8, flexWrap: "wrap", marginBottom: 12 },
   statusOption: {

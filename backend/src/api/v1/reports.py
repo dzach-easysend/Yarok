@@ -28,6 +28,7 @@ def _report_to_response(
     media_items: Optional[list[MediaItem]] = None,
     lat: Optional[float] = None,
     lng: Optional[float] = None,
+    view_count: Optional[int] = None,
 ) -> ReportResponse:
     """Build API response from a report row.
 
@@ -40,6 +41,9 @@ def _report_to_response(
             lat, lng = float(geom.y), float(geom.x)
         else:
             lat, lng = 0.0, 0.0
+    vc = view_count if view_count is not None else getattr(r, "view_count", 0)
+    if vc is None:
+        vc = 0
     return ReportResponse(
         id=r.id,
         lat=float(lat),
@@ -50,6 +54,7 @@ def _report_to_response(
         created_at=r.created_at.isoformat() if r.created_at else "",
         media_count=media_count,
         media=media_items or [],
+        view_count=vc,
     )
 
 
@@ -147,12 +152,17 @@ async def get_report(
         for m in media_rows
     ]
 
+    # Increment view count on each fetch (MVP; scale with report_views log if needed)
+    report.view_count = getattr(report, "view_count", 0) + 1
+    await db.flush()
+
     return _report_to_response(
         report,
         media_count=len(media_items),
         media_items=media_items,
         lat=row_lat,
         lng=row_lng,
+        view_count=report.view_count,
     )
 
 
