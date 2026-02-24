@@ -69,9 +69,12 @@ export default function MapView({
   const handleRegionDidChange = useCallback(async () => {
     if (!onMoveEnd || !mapRef.current) return;
     try {
-      const mapCenter = await mapRef.current.getCenter();
+      const [mapCenter, zoomLevel] = await Promise.all([
+        mapRef.current.getCenter(),
+        mapRef.current.getZoom(),
+      ]);
       if (mapCenter) {
-        onMoveEnd({ lat: mapCenter[1], lng: mapCenter[0] });
+        onMoveEnd({ lat: mapCenter[1], lng: mapCenter[0] }, zoomLevel);
       }
     } catch {
       // Camera may not be ready yet

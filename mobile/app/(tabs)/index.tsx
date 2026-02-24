@@ -19,6 +19,12 @@ const DEFAULT_CENTER: MapCenter = { lat: 31.7683, lng: 35.2137 };
 const DEFAULT_ZOOM = 13;
 const TOAST_DURATION_MS = 4000;
 
+/** Radius in km so the request circle covers the visible viewport at this zoom (avoids clusters disappearing when panning). */
+function radiusKmForZoom(zoom: number): number {
+  const viewportRadius = 17000 / Math.pow(2, zoom);
+  return Math.max(50, Math.min(400, Math.round(viewportRadius)));
+}
+
 declare global {
   interface Window {
     __yarokTestHooks?: { getSearchPinCount: () => number };
@@ -28,6 +34,7 @@ declare global {
 export default function MapScreen() {
   const router = useRouter();
   const [center, setCenter] = useState<MapCenter>(DEFAULT_CENTER);
+  const [zoom, setZoom] = useState(DEFAULT_ZOOM);
   const [searchQuery, setSearchQuery] = useState("");
   const [flyTo, setFlyTo] = useState<{ center: MapCenter; zoom: number } | null>(null);
   const [searchPin, setSearchPin] = useState<MapMarker | null>(null);
@@ -53,11 +60,23 @@ export default function MapScreen() {
     };
   }, []);
 
+  const radius_km = radiusKmForZoom(zoom);
   const { data: reports = [] } = useQuery({
-    queryKey: ["reports", center.lat, center.lng],
+    queryKey: ["reports", center.lat, center.lng, radius_km],
     queryFn: () =>
-      getReports({ lat: center.lat, lng: center.lng, radius_km: 50 }),
+      getReports({ lat: center.lat, lng: center.lng, radius_km }),
   });
+
+  useEffect(() => {
+    railwayLog("map_screen_reports", {
+      center: { lat: center.lat, lng: center.lng },
+      zoom,
+      radius_km,
+      count: reports.length,
+      positions: reports.map((r: ReportListItem) => ({ id: r.id, lat: r.lat, lng: r.lng })),
+    });
+    if (reports.length > 0) emitEvent("map_screen_reports");
+  }, [center.lat, center.lng, zoom, radius_km, reports]);
 
   const markers: MapMarker[] = [
     ...reports.map((r: ReportListItem) => ({
@@ -111,7 +130,10 @@ export default function MapScreen() {
         onMarkerPress={(id) => {
           if (id !== "__search__") router.push(`/report/${id}`);
         }}
-        onMoveEnd={setCenter}
+        onMoveEnd={(newCenter, newZoom) => {
+          setCenter(newCenter);
+          if (newZoom != null) setZoom(newZoom);
+        }}
         flyTo={flyTo}
       />
       <MapSearchBar

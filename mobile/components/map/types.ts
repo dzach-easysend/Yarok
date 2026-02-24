@@ -24,8 +24,8 @@ export interface MapViewProps {
   markers?: MapMarker[];
   /** Called when a marker is tapped/clicked */
   onMarkerPress?: (id: string) => void;
-  /** Called when the map stops moving; provides new center */
-  onMoveEnd?: (center: MapCenter) => void;
+  /** Called when the map stops moving; provides new center and current zoom (for viewport-based fetching). */
+  onMoveEnd?: (center: MapCenter, zoom?: number) => void;
   /** Whether the map is interactive (pan/zoom). Default true. */
   interactive?: boolean;
   /** When changed, the map flies to this center + zoom */

@@ -17,6 +17,7 @@ import { OSM_MAP_STYLE } from "./types";
 import { MapControls } from "./MapControls";
 import { emitEvent } from "@/utils/railwayLog";
 import { markersToGeoJSON } from "./mapUtils";
+import { logClusterInput, logClusterViewport, logClusterRendered, getRenderedClusterSummary } from "./clusterDebug";
 import {
   CLUSTER_RADIUS,
   CLUSTER_MAX_ZOOM,
@@ -94,6 +95,10 @@ export default function MapView({
   const geojson = useMemo(() => markersToGeoJSON(markers), [markers]);
 
   useEffect(() => {
+    logClusterInput(markers);
+  }, [markers]);
+
+  useEffect(() => {
     applyFlyTo(mapRef, flyTo);
   }, [flyTo]);
 
@@ -122,11 +127,17 @@ export default function MapView({
 
   const handleMoveEnd = useCallback(
     (evt: ViewStateChangeEvent) => {
-      if (!onMoveEnd) return;
-      onMoveEnd({
-        lat: evt.viewState.latitude,
-        lng: evt.viewState.longitude,
-      });
+      const center = { lat: evt.viewState.latitude, lng: evt.viewState.longitude };
+      const zoom = evt.viewState.zoom;
+      onMoveEnd?.(center, zoom);
+      const map = mapRef.current?.getMap?.();
+      if (map) {
+        const summary = getRenderedClusterSummary(map as Parameters<typeof getRenderedClusterSummary>[0]);
+        if (summary) {
+          logClusterViewport(summary.viewport);
+          logClusterRendered(summary.rendered);
+        }
+      }
     },
     [onMoveEnd],
   );
