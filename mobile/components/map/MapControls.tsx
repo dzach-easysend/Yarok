@@ -6,14 +6,21 @@ interface MapControlsProps {
   onZoomIn: () => void;
   onZoomOut: () => void;
   onLocateMe: () => void;
+  /** When true, locate button is disabled (e.g. while getting location). */
+  locating?: boolean;
   style?: ViewStyle;
 }
 
-export function MapControls({ onZoomIn, onZoomOut, onLocateMe, style }: MapControlsProps) {
+export function MapControls({ onZoomIn, onZoomOut, onLocateMe, locating = false, style }: MapControlsProps) {
   return (
     <View style={[styles.container, style]}>
-      <TouchableOpacity style={styles.button} onPress={onLocateMe} activeOpacity={0.7}>
-        <MaterialIcons name="my-location" size={24} color={colors.muted} />
+      <TouchableOpacity
+        style={[styles.button, locating && styles.buttonDisabled]}
+        onPress={onLocateMe}
+        activeOpacity={0.7}
+        disabled={locating}
+      >
+        <MaterialIcons name="my-location" size={24} color={locating ? colors.border : colors.muted} />
       </TouchableOpacity>
 
       <View style={styles.zoomContainer}>
@@ -89,5 +96,8 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: colors.border,
     width: "100%",
+  },
+  buttonDisabled: {
+    opacity: 0.6,
   },
 });
