@@ -31,6 +31,8 @@ export interface ReportListItem {
   media_count: number;
   media: MediaItem[];
   view_count: number;
+  is_mine: boolean;
+  author_display: string | null;
 }
 
 export interface ReportCreatePayload {
@@ -46,6 +48,7 @@ interface ReportQueryParams {
   radius_km?: number;
   page?: number;
   limit?: number;
+  mine?: boolean;
 }
 
 export async function getReports(params: ReportQueryParams): Promise<ReportListItem[]> {

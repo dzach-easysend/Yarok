@@ -1,9 +1,11 @@
 """API tests for /api/v1/auth endpoints with mocked database."""
 
+from uuid import uuid4
+
 import pytest
 
 from src.services.auth import create_access_token, create_refresh_token, hash_password
-from tests.conftest import make_execute_result, make_user
+from tests.conftest import auth_headers, make_execute_result, make_user
 
 # ---------------------------------------------------------------------------
 # POST /api/v1/auth/register
@@ -120,6 +122,8 @@ class TestLogin:
         data = resp.json()
         assert "access_token" in data
         assert "refresh_token" in data
+        assert data.get("user_id") == user.id
+        assert data.get("display_name") == user.display_name
 
     @pytest.mark.asyncio
     async def test_login_wrong_password(self, client, mock_db):
@@ -317,3 +321,51 @@ class TestDeviceRegister:
     async def test_device_register_missing_device_id(self, client, mock_db):
         resp = await client.post("/api/v1/auth/device", json={})
         assert resp.status_code == 422
+
+
+# ---------------------------------------------------------------------------
+# GET /api/v1/auth/me
+# ---------------------------------------------------------------------------
+
+
+class TestGetMe:
+    """Tests for the current user profile endpoint."""
+
+    @pytest.mark.asyncio
+    async def test_me_success_returns_display_name(self, client, mock_db):
+        user_id = str(uuid4())
+        user = make_user(id=user_id, display_name="Dana", email="dana@test.com")
+        mock_db.execute.return_value = make_execute_result(
+            scalar_one_or_none_value=user,
+        )
+
+        resp = await client.get(
+            "/api/v1/auth/me",
+            headers=auth_headers(user_id),
+        )
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["id"] == user_id
+        assert data["email"] == "dana@test.com"
+        assert data["display_name"] == "Dana"
+
+    @pytest.mark.asyncio
+    async def test_me_401_without_token(self, client, mock_db):
+        resp = await client.get("/api/v1/auth/me")
+        assert resp.status_code == 401
+
+    @pytest.mark.asyncio
+    async def test_me_401_user_not_found(self, client, mock_db):
+        user_id = str(uuid4())
+        mock_db.execute.return_value = make_execute_result(
+            scalar_one_or_none_value=None,
+        )
+
+        resp = await client.get(
+            "/api/v1/auth/me",
+            headers=auth_headers(user_id),
+        )
+
+        assert resp.status_code == 401
+        assert "not found" in resp.json()["detail"].lower()

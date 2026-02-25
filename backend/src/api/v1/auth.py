@@ -1,12 +1,21 @@
-"""Auth endpoints: register, login, refresh, device."""
+"""Auth endpoints: register, login, refresh, device, me."""
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import Optional
+
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import get_db
 from src.models.user import User
-from src.schemas.user import DeviceRegister, RefreshRequest, TokenPair, UserLogin, UserRegister
+from src.schemas.user import (
+    DeviceRegister,
+    MeResponse,
+    RefreshRequest,
+    TokenPair,
+    UserLogin,
+    UserRegister,
+)
 from src.services.auth import (
     create_access_token,
     create_refresh_token,
@@ -16,6 +25,16 @@ from src.services.auth import (
 )
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+
+async def get_current_user_id(authorization: Optional[str] = Header(None)) -> Optional[str]:
+    """Extract user_id (JWT sub) from Bearer token; returns None if absent/invalid."""
+    if not authorization or not authorization.startswith("Bearer "):
+        return None
+    payload = decode_token(authorization[7:])
+    if not payload:
+        return None
+    return payload.get("sub")
 
 
 @router.post("/register", response_model=TokenPair)
@@ -39,6 +58,8 @@ async def register(
     return TokenPair(
         access_token=create_access_token(sub),
         refresh_token=create_refresh_token(sub),
+        display_name=user.display_name,
+        user_id=sub,
     )
 
 
@@ -58,6 +79,33 @@ async def login(
     return TokenPair(
         access_token=create_access_token(sub),
         refresh_token=create_refresh_token(sub),
+        display_name=user.display_name,
+        user_id=sub,
+    )
+
+
+@router.get("/me", response_model=MeResponse)
+async def get_me(
+    db: AsyncSession = Depends(get_db),
+    user_id: Optional[str] = Depends(get_current_user_id),
+) -> MeResponse:
+    """Return current user profile; 401 if no valid token."""
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required",
+        )
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found",
+        )
+    return MeResponse(
+        id=str(user.id),
+        email=user.email,
+        display_name=user.display_name,
     )
 
 

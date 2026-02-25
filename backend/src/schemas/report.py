@@ -15,9 +15,16 @@ class ReportCreate(BaseModel):
 
 
 class ReportUpdate(BaseModel):
-    """Update report status."""
+    """Update report fields.
 
-    status: str = Field(..., pattern="^(open|in_progress|cleaned|invalid)$")
+    status is allowed for all authenticated users.
+    description and contact_info are owner-only fields — the endpoint
+    enforces this at the handler level, not the schema level.
+    """
+
+    status: Optional[str] = Field(None, pattern="^(open|in_progress|cleaned|invalid)$")
+    description: Optional[str] = None
+    contact_info: Optional[str] = None
 
 
 class ReportListQuery(BaseModel):
@@ -52,5 +59,7 @@ class ReportResponse(BaseModel):
     media_count: int = 0
     media: list[MediaItem] = []
     view_count: int = 0
+    is_mine: bool = False
+    author_display: Optional[str] = None
 
     model_config = {"from_attributes": True}

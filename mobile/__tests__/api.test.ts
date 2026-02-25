@@ -1,4 +1,4 @@
-import { setAuthToken, api, deleteMedia } from "../services/api";
+import { setAuthToken, api, deleteMedia, getReports } from "../services/api";
 
 describe("setAuthToken", () => {
   it("sets the Authorization header when given a token", () => {
@@ -19,6 +19,28 @@ describe("deleteMedia", () => {
     jest.spyOn(api, "delete").mockImplementation(deleteMock as any);
     await deleteMedia("report-123", "media-456");
     expect(deleteMock).toHaveBeenCalledWith("/api/v1/reports/report-123/media/media-456");
+    jest.restoreAllMocks();
+  });
+});
+
+describe("getReports", () => {
+  it("passes mine=true as a query param when specified", async () => {
+    const getMock = jest.fn().mockResolvedValue({ data: [] });
+    jest.spyOn(api, "get").mockImplementation(getMock as any);
+    await getReports({ lat: 32.0, lng: 34.0, mine: true });
+    expect(getMock).toHaveBeenCalledWith("/api/v1/reports", {
+      params: { lat: 32.0, lng: 34.0, mine: true },
+    });
+    jest.restoreAllMocks();
+  });
+
+  it("does not include mine param when not specified", async () => {
+    const getMock = jest.fn().mockResolvedValue({ data: [] });
+    jest.spyOn(api, "get").mockImplementation(getMock as any);
+    await getReports({ lat: 32.0, lng: 34.0 });
+    expect(getMock).toHaveBeenCalledWith("/api/v1/reports", {
+      params: { lat: 32.0, lng: 34.0 },
+    });
     jest.restoreAllMocks();
   });
 });

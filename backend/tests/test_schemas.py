@@ -74,9 +74,12 @@ class TestReportUpdate:
         with pytest.raises(ValidationError):
             ReportUpdate(status="")
 
-    def test_missing_status_rejected(self):
-        with pytest.raises(ValidationError):
-            ReportUpdate()
+    def test_all_fields_optional(self):
+        """ReportUpdate allows all fields to be absent; ownership checks happen in the handler."""
+        r = ReportUpdate()
+        assert r.status is None
+        assert r.description is None
+        assert r.contact_info is None
 
 
 # ---------------------------------------------------------------------------

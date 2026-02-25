@@ -34,11 +34,21 @@ class RefreshRequest(BaseModel):
 
 
 class TokenPair(BaseModel):
-    """Access and refresh tokens."""
+    """Access and refresh tokens; login/register also return user info."""
 
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
+    display_name: Optional[str] = None
+    user_id: Optional[str] = None
+
+
+class MeResponse(BaseModel):
+    """Current user profile (GET /auth/me)."""
+
+    id: str
+    email: Optional[str] = None
+    display_name: Optional[str] = None
 
 
 class UserResponse(BaseModel):

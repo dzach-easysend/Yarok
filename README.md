@@ -82,7 +82,7 @@ npx expo run:android              # Android (requires prebuild)
 
 ### Backend (use the venv)
 
-From the project root:
+From the project root. Ensure the database is running (`docker compose up -d yarok-db`) before running tests.
 
 ```bash
 cd backend

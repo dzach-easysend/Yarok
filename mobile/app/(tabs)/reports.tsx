@@ -21,6 +21,7 @@ import {
 } from "@/constants/reportCardLabels";
 import DragScrollView from "@/components/DragScrollView";
 import { MapView } from "@/components/map";
+import { useAuth } from "@/contexts/AuthContext";
 
 const DEFAULT_CENTER = { lat: 31.7683, lng: 35.2137 };
 
@@ -77,6 +78,14 @@ function formatCreationDate(isoString: string): string {
 }
 
 
+function AuthorLabel({ item }: { item: ReportListItem }) {
+  if (item.is_mine) {
+    return <Text style={styles.authorMine}>הדיווח שלי</Text>;
+  }
+  const name = item.author_display ?? "אנונימי";
+  return <Text style={styles.authorOther}>{name}</Text>;
+}
+
 function ReportCard({ item, onPress }: { item: ReportListItem; onPress: () => void }) {
   const snippet = truncateText(item.description, SNIPPET_MAX_LENGTH);
 
@@ -113,6 +122,7 @@ function ReportCard({ item, onPress }: { item: ReportListItem; onPress: () => vo
             {formatCreationDate(item.created_at)}
           </Text>
         </View>
+        <AuthorLabel item={item} />
       </View>
     </TouchableOpacity>
   );
@@ -120,7 +130,14 @@ function ReportCard({ item, onPress }: { item: ReportListItem; onPress: () => vo
 
 export default function MyReportsScreen() {
   const router = useRouter();
+  const { isLoggedIn } = useAuth();
   const [userLocation, setUserLocation] = useState(DEFAULT_CENTER);
+  const [showMine, setShowMine] = useState(isLoggedIn);
+
+  // Keep showMine in sync when auth state changes (e.g. on logout)
+  useEffect(() => {
+    if (!isLoggedIn) setShowMine(false);
+  }, [isLoggedIn]);
 
   useEffect(() => {
     (async () => {
@@ -132,9 +149,14 @@ export default function MyReportsScreen() {
   }, []);
 
   const { data: reports = [], isLoading, isError } = useQuery({
-    queryKey: ["my-reports", userLocation.lat, userLocation.lng],
+    queryKey: ["my-reports", userLocation.lat, userLocation.lng, showMine],
     queryFn: () =>
-      getReports({ lat: userLocation.lat, lng: userLocation.lng, radius_km: 500 }),
+      getReports({
+        lat: userLocation.lat,
+        lng: userLocation.lng,
+        radius_km: 500,
+        mine: showMine,
+      }),
   });
 
   const isEmpty = !isLoading && reports.length === 0;
@@ -209,6 +231,30 @@ export default function MyReportsScreen() {
 
   return (
     <View style={styles.container} testID="screen-reports">
+      {isLoggedIn ? (
+        <View style={styles.toggleBar}>
+          <TouchableOpacity
+            testID="toggle-mine"
+            style={[styles.toggleBtn, showMine && styles.toggleBtnActive]}
+            onPress={() => setShowMine(true)}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.toggleText, showMine && styles.toggleTextActive]}>
+              הדיווחים שלי
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            testID="toggle-all"
+            style={[styles.toggleBtn, !showMine && styles.toggleBtnActive]}
+            onPress={() => setShowMine(false)}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.toggleText, !showMine && styles.toggleTextActive]}>
+              כל הדיווחים
+            </Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
       {renderContent()}
       <TouchableOpacity
         testID="fab-create"
@@ -225,6 +271,40 @@ export default function MyReportsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   loadingWrap: { flex: 1, justifyContent: "center", alignItems: "center" },
+  toggleBar: {
+    flexDirection: "row",
+    margin: 12,
+    marginBottom: 0,
+    borderRadius: radii.full,
+    backgroundColor: colors.border,
+    padding: 3,
+    alignSelf: "stretch",
+  },
+  toggleBtn: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: radii.full,
+    alignItems: "center",
+  },
+  toggleBtnActive: {
+    backgroundColor: colors.surface,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  toggleText: {
+    fontSize: 13,
+    fontWeight: "500",
+    color: colors.muted,
+    textAlign: "center",
+    writingDirection: "rtl",
+  },
+  toggleTextActive: {
+    color: colors.primary,
+    fontWeight: "700",
+  },
   listScroll: { flex: 1, minHeight: 0 },
   list: { padding: 16, paddingBottom: 80 },
   card: {
@@ -278,6 +358,23 @@ const styles = StyleSheet.create({
     textAlign: "right",
   },
   meta: { fontSize: 12, color: colors.muted, textAlign: "right" },
+  authorMine: {
+    fontSize: 11,
+    color: colors.primary,
+    fontWeight: "600",
+    textAlign: "right",
+    alignSelf: "stretch",
+    marginTop: 4,
+    writingDirection: "rtl",
+  },
+  authorOther: {
+    fontSize: 11,
+    color: colors.muted,
+    textAlign: "right",
+    alignSelf: "stretch",
+    marginTop: 4,
+    writingDirection: "rtl",
+  },
   fab: {
     position: "absolute",
     bottom: 20,

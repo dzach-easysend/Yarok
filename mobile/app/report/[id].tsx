@@ -483,16 +483,18 @@ export default function ReportDetailScreen() {
             </TouchableOpacity>
           )}
 
-          <TouchableOpacity
-            testID="btn-delete-report"
-            style={styles.deleteBtn}
-            onPress={handleDelete}
-            disabled={deleteMutation.isPending}
-          >
-            <Text style={styles.deleteBtnText}>
-              {deleteMutation.isPending ? "מוחק..." : "מחק דיווח"}
-            </Text>
-          </TouchableOpacity>
+          {report.is_mine ? (
+            <TouchableOpacity
+              testID="btn-delete-report"
+              style={styles.deleteBtn}
+              onPress={handleDelete}
+              disabled={deleteMutation.isPending}
+            >
+              <Text style={styles.deleteBtnText}>
+                {deleteMutation.isPending ? "מוחק..." : "מחק דיווח"}
+              </Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
       </ScrollView>
     </View>

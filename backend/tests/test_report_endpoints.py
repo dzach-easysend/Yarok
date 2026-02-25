@@ -14,7 +14,14 @@ from uuid import uuid4
 
 import pytest
 
-from tests.conftest import make_execute_result, make_media, make_report, make_report_row
+from tests.conftest import (
+    auth_headers,
+    make_execute_result,
+    make_media,
+    make_report,
+    make_report_row,
+    make_user,
+)
 
 # ---------------------------------------------------------------------------
 # POST /api/v1/reports
@@ -272,44 +279,80 @@ class TestUpdateReport:
 
 
 class TestDeleteReport:
-    """Tests for soft-delete (sets status to 'invalid')."""
+    """Tests for soft-delete (sets status to 'invalid', owner-only)."""
 
     @pytest.mark.asyncio
     async def test_delete_report_success(self, client, mock_db):
-        report = make_report(status="open")
+        user_id = str(uuid4())
+        report = make_report(status="open", user_id=user_id)
         mock_db.execute = AsyncMock(
             return_value=make_execute_result(
                 scalar_one_or_none_value=report,
             )
         )
 
-        resp = await client.delete(f"/api/v1/reports/{report.id}")
+        resp = await client.delete(
+            f"/api/v1/reports/{report.id}",
+            headers=auth_headers(user_id),
+        )
 
         assert resp.status_code == 204
 
     @pytest.mark.asyncio
     async def test_delete_report_sets_status_invalid(self, client, mock_db):
         """Verify the in-memory object's status is mutated to 'invalid'."""
-        report = make_report(status="open")
+        user_id = str(uuid4())
+        report = make_report(status="open", user_id=user_id)
         mock_db.execute = AsyncMock(
             return_value=make_execute_result(
                 scalar_one_or_none_value=report,
             )
         )
 
-        await client.delete(f"/api/v1/reports/{report.id}")
+        await client.delete(
+            f"/api/v1/reports/{report.id}",
+            headers=auth_headers(user_id),
+        )
 
         assert report.status == "invalid"
 
     @pytest.mark.asyncio
+    async def test_delete_report_requires_auth(self, client, mock_db):
+        """DELETE without auth token → 401."""
+        resp = await client.delete(f"/api/v1/reports/{uuid4()}")
+
+        assert resp.status_code == 401
+
+    @pytest.mark.asyncio
+    async def test_delete_report_not_owner_returns_403(self, client, mock_db):
+        """DELETE by a user who is not the owner → 403."""
+        owner_id = str(uuid4())
+        other_user_id = str(uuid4())
+        report = make_report(status="open", user_id=owner_id)
+        mock_db.execute = AsyncMock(
+            return_value=make_execute_result(scalar_one_or_none_value=report)
+        )
+
+        resp = await client.delete(
+            f"/api/v1/reports/{report.id}",
+            headers=auth_headers(other_user_id),
+        )
+
+        assert resp.status_code == 403
+
+    @pytest.mark.asyncio
     async def test_delete_report_not_found(self, client, mock_db):
+        user_id = str(uuid4())
         mock_db.execute = AsyncMock(
             return_value=make_execute_result(
                 scalar_one_or_none_value=None,
             )
         )
 
-        resp = await client.delete(f"/api/v1/reports/{uuid4()}")
+        resp = await client.delete(
+            f"/api/v1/reports/{uuid4()}",
+            headers=auth_headers(user_id),
+        )
 
         assert resp.status_code == 404
 
@@ -424,6 +467,64 @@ class TestListReports:
         assert resp.status_code == 422
 
     @pytest.mark.asyncio
+    async def test_list_reports_mine_param_requires_auth(self, client, mock_db):
+        """GET /reports?mine=true without auth → 401."""
+        resp = await client.get(
+            "/api/v1/reports",
+            params={"lat": 32.0, "lng": 34.0, "mine": "true"},
+        )
+        assert resp.status_code == 401
+
+    @pytest.mark.asyncio
+    async def test_list_reports_mine_param_filters_by_owner(self, client, mock_db):
+        """GET /reports?mine=true returns only reports matching the JWT user_id."""
+        user_id = str(uuid4())
+        report = make_report(lat=32.0, lng=34.0, user_id=user_id)
+        row = make_report_row(report, lat=32.0, lng=34.0)
+        mock_db.execute = AsyncMock(
+            side_effect=[
+                make_execute_result(all_rows=[row]),  # SELECT reports
+                make_execute_result(scalars_all=[]),  # batch load users (user_id set)
+                make_execute_result(scalar_value=0),  # COUNT media
+            ]
+        )
+
+        resp = await client.get(
+            "/api/v1/reports",
+            params={"lat": 32.0, "lng": 34.0, "mine": "true"},
+            headers=auth_headers(user_id),
+        )
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data) == 1
+        assert data[0]["is_mine"] is True
+
+    @pytest.mark.asyncio
+    async def test_list_reports_is_mine_false_for_other_user(self, client, mock_db):
+        """Reports by another user have is_mine=False in the response."""
+        owner_id = str(uuid4())
+        requester_id = str(uuid4())
+        report = make_report(lat=32.0, lng=34.0, user_id=owner_id)
+        row = make_report_row(report, lat=32.0, lng=34.0)
+        mock_db.execute = AsyncMock(
+            side_effect=[
+                make_execute_result(all_rows=[row]),
+                make_execute_result(scalars_all=[]),
+                make_execute_result(scalar_value=0),
+            ]
+        )
+
+        resp = await client.get(
+            "/api/v1/reports",
+            params={"lat": 32.0, "lng": 34.0},
+            headers=auth_headers(requester_id),
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()[0]["is_mine"] is False
+
+    @pytest.mark.asyncio
     async def test_list_reports_ordered_by_created_at_desc(self, client, mock_db):
         """GET /reports returns results in created_at descending order (newest first)."""
         base = datetime.now(timezone.utc)
@@ -464,3 +565,144 @@ class TestListReports:
         t0 = datetime.fromisoformat(data[0]["created_at"].replace("Z", "+00:00"))
         t1 = datetime.fromisoformat(data[1]["created_at"].replace("Z", "+00:00"))
         assert t0 >= t1
+
+
+# ---------------------------------------------------------------------------
+# Ownership and authorship
+# ---------------------------------------------------------------------------
+
+
+class TestOwnership:
+    """Tests for ownership enforcement on PATCH and GET authorship fields."""
+
+    @pytest.mark.asyncio
+    async def test_patch_status_succeeds_for_non_owner(self, client, mock_db):
+        """PATCH status is allowed for any authenticated user (not just owner)."""
+        owner_id = str(uuid4())
+        other_id = str(uuid4())
+        report = make_report(status="open", user_id=owner_id)
+        row = make_report_row(report, lat=report.location.y, lng=report.location.x)
+        mock_db.execute = AsyncMock(
+            side_effect=[
+                make_execute_result(first_row=row),
+                make_execute_result(scalar_value=0),
+            ]
+        )
+
+        resp = await client.patch(
+            f"/api/v1/reports/{report.id}",
+            json={"status": "cleaned"},
+            headers=auth_headers(other_id),
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "cleaned"
+
+    @pytest.mark.asyncio
+    async def test_patch_description_by_non_owner_returns_403(self, client, mock_db):
+        """PATCH description by a non-owner → 403."""
+        owner_id = str(uuid4())
+        other_id = str(uuid4())
+        report = make_report(status="open", user_id=owner_id)
+        row = make_report_row(report, lat=report.location.y, lng=report.location.x)
+        mock_db.execute = AsyncMock(return_value=make_execute_result(first_row=row))
+
+        resp = await client.patch(
+            f"/api/v1/reports/{report.id}",
+            json={"description": "Trying to edit someone else's report"},
+            headers=auth_headers(other_id),
+        )
+
+        assert resp.status_code == 403
+
+    @pytest.mark.asyncio
+    async def test_patch_description_by_owner_succeeds(self, client, mock_db):
+        """PATCH description by the owner → 200."""
+        user_id = str(uuid4())
+        report = make_report(status="open", user_id=user_id, description="old")
+        row = make_report_row(report, lat=report.location.y, lng=report.location.x)
+        mock_db.execute = AsyncMock(
+            side_effect=[
+                make_execute_result(first_row=row),
+                make_execute_result(scalar_value=0),
+            ]
+        )
+
+        resp = await client.patch(
+            f"/api/v1/reports/{report.id}",
+            json={"description": "updated description"},
+            headers=auth_headers(user_id),
+        )
+
+        assert resp.status_code == 200
+        assert report.description == "updated description"
+
+    @pytest.mark.asyncio
+    async def test_get_report_is_mine_true_for_owner(self, client, mock_db):
+        """GET /reports/{id} returns is_mine=True when requester is the owner."""
+        user_id = str(uuid4())
+        report = make_report(user_id=user_id)
+        row = make_report_row(report, lat=report.location.y, lng=report.location.x)
+        # Calls: fetch report, fetch media, load author (user lookup)
+        mock_db.execute = AsyncMock(
+            side_effect=[
+                make_execute_result(first_row=row),
+                make_execute_result(scalars_all=[]),
+                make_execute_result(
+                    scalar_one_or_none_value=make_user(id=user_id, display_name="Dana")
+                ),
+            ]
+        )
+
+        resp = await client.get(
+            f"/api/v1/reports/{report.id}",
+            headers=auth_headers(user_id),
+        )
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["is_mine"] is True
+        assert data["author_display"] == "Dana"
+
+    @pytest.mark.asyncio
+    async def test_get_report_is_mine_false_for_non_owner(self, client, mock_db):
+        """GET /reports/{id} returns is_mine=False when requester is not the owner."""
+        owner_id = str(uuid4())
+        requester_id = str(uuid4())
+        report = make_report(user_id=owner_id)
+        row = make_report_row(report, lat=report.location.y, lng=report.location.x)
+        mock_db.execute = AsyncMock(
+            side_effect=[
+                make_execute_result(first_row=row),
+                make_execute_result(scalars_all=[]),
+                make_execute_result(scalar_one_or_none_value=make_user(id=owner_id)),
+            ]
+        )
+
+        resp = await client.get(
+            f"/api/v1/reports/{report.id}",
+            headers=auth_headers(requester_id),
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["is_mine"] is False
+
+    @pytest.mark.asyncio
+    async def test_get_report_author_display_none_for_anonymous(self, client, mock_db):
+        """Anonymous reports (user_id=None) return author_display=None."""
+        report = make_report(user_id=None)
+        row = make_report_row(report, lat=report.location.y, lng=report.location.x)
+        mock_db.execute = AsyncMock(
+            side_effect=[
+                make_execute_result(first_row=row),
+                make_execute_result(scalars_all=[]),
+                # No user lookup for anonymous report
+            ]
+        )
+
+        resp = await client.get(f"/api/v1/reports/{report.id}")
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["is_mine"] is False
+        assert data["author_display"] is None

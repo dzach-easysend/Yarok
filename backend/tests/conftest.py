@@ -228,6 +228,18 @@ def make_report_row(report, *, lat: float, lng: float) -> _RowLike:
     return _RowLike(report, lat, lng, lat=lat, lng=lng)
 
 
+def make_token(user_id: str, scope: str = "user") -> str:
+    """Create a signed JWT for the given user_id using the dev secret."""
+    from src.services.auth import create_access_token
+
+    return create_access_token(user_id, scope=scope)
+
+
+def auth_headers(user_id: str) -> dict:
+    """Return an Authorization header dict for the given user_id."""
+    return {"Authorization": f"Bearer {make_token(user_id)}"}
+
+
 def make_execute_result(
     scalar_one_or_none_value=None,
     scalar_value=None,

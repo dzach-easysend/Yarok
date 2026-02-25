@@ -20,6 +20,8 @@ import ScreenHeader from "@/components/ScreenHeader";
 import { railwayLog, emitEvent } from "@/utils/railwayLog";
 import { MapView, type MapCenter } from "@/components/map";
 import LocationPickerOverlay from "@/components/LocationPickerOverlay";
+import AuthPromptOverlay from "@/components/AuthPromptOverlay";
+import { useAuth } from "@/contexts/AuthContext";
 import { colors, radii } from "@/constants/theme";
 
 type MediaItem = { uri: string; file?: File };
@@ -30,9 +32,10 @@ export default function CreateReportScreen() {
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [pickerVisible, setPickerVisible] = useState(false);
+  const [authOverlayVisible, setAuthOverlayVisible] = useState(false);
   const [description, setDescription] = useState("");
-  const [contactInfo, setContactInfo] = useState("");
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
+  const { isLoggedIn, displayName, switchToAnonymous } = useAuth();
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -153,7 +156,6 @@ export default function CreateReportScreen() {
         lat: location.lat,
         lng: location.lng,
         description: description || null,
-        contact_info: contactInfo || null,
       },
       mediaItems,
     });
@@ -313,15 +315,30 @@ export default function CreateReportScreen() {
           />
         </View>
         <View style={styles.step}>
-          <Text style={styles.stepLabel}>פרטי התקשרות (אופציונלי)</Text>
-          <TextInput
-            testID="input-contact"
-            style={styles.input}
-            placeholder="אימייל או טלפון — או להשאיר אנונימי"
-            placeholderTextColor={colors.muted}
-            value={contactInfo}
-            onChangeText={setContactInfo}
-          />
+          <Text style={styles.stepLabel}>מזהה מדווח</Text>
+          {isLoggedIn ? (
+            <TouchableOpacity
+              testID="reporter-chip"
+              style={styles.reporterChip}
+              onPress={() => switchToAnonymous()}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.reporterChipText}>
+                מדווח כ: {displayName || "מחובר"}
+              </Text>
+              <Text style={styles.reporterChipSub}>לחץ לדיווח אנונימי</Text>
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.reporterRow}>
+              <Text style={styles.reporterAnon}>דיווח אנונימי</Text>
+              <TouchableOpacity
+                testID="reporter-login-link"
+                onPress={() => setAuthOverlayVisible(true)}
+              >
+                <Text style={styles.reporterLink}>התחבר / הירשם</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       </ScrollView>
       <TouchableOpacity
@@ -345,6 +362,11 @@ export default function CreateReportScreen() {
         initialCenter={location ?? { lat: 31.7683, lng: 35.2137 }}
         onConfirm={handlePickerConfirm}
         onCancel={handlePickerCancel}
+      />
+      <AuthPromptOverlay
+        visible={authOverlayVisible}
+        onSuccess={() => setAuthOverlayVisible(false)}
+        onDismiss={() => setAuthOverlayVisible(false)}
       />
     </View>
   );
@@ -477,6 +499,40 @@ const styles = StyleSheet.create({
   },
   addMediaIcon: { fontSize: 28, opacity: 0.8 },
   addMediaText: { fontSize: 12, color: colors.primary, textAlign: "center" },
+  reporterChip: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: "rgba(22, 163, 74, 0.12)",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(22, 163, 74, 0.3)",
+    alignItems: "flex-end",
+  },
+  reporterChipText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: colors.primary,
+    textAlign: "right",
+  },
+  reporterChipSub: {
+    fontSize: 12,
+    color: colors.muted,
+    marginTop: 4,
+    textAlign: "right",
+  },
+  reporterRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  reporterAnon: { fontSize: 14, color: colors.muted, textAlign: "right" },
+  reporterLink: { fontSize: 14, fontWeight: "600", color: colors.primary, textAlign: "right" },
   input: {
     minHeight: 80,
     padding: 12,
