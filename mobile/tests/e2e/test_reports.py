@@ -67,7 +67,7 @@ class TestCreateReport:
 # ---------------------------------------------------------------------------
 
 class TestReportsList:
-    """Reports appear in the My Reports list."""
+    """Reports appear in the Reports list."""
 
     def test_seeded_report_in_list(self, page, api_create_report):
         report = api_create_report("E2E list check")

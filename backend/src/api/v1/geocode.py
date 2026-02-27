@@ -1,7 +1,10 @@
 """Geocoding proxy to OpenStreetMap Nominatim (avoids CORS on web, centralizes rate limiting)."""
 
 import httpx
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Query, Request, status
+
+from src.config import settings
+from src.middleware.security import limiter
 
 NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
 NOMINATIM_UA = "YarokBackend/1.0 (geocode proxy; https://github.com/yarok)"
@@ -10,7 +13,8 @@ router = APIRouter(prefix="/geocode", tags=["geocode"])
 
 
 @router.get("")
-async def geocode(q: str = Query(..., min_length=1, max_length=500)):
+@limiter.limit(f"{settings.rate_limit_geocode_per_minute}/minute")
+async def geocode(request: Request, q: str = Query(..., min_length=1, max_length=500)):
     """Proxy geocode query to Nominatim. Returns first result as { lat, lng } or 404."""
     query = q.strip()
     if not query:

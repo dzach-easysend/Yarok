@@ -1,5 +1,6 @@
 """Admin endpoints (e.g. purge reports). Protected by X-Admin-Secret when ADMIN_SECRET is set."""
 
+import hmac
 from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
@@ -19,7 +20,7 @@ async def require_admin_secret(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Admin endpoints are disabled (ADMIN_SECRET not set).",
         )
-    if x_admin_secret != settings.admin_secret:
+    if not hmac.compare_digest(x_admin_secret or "", settings.admin_secret or ""):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Invalid or missing X-Admin-Secret header.",

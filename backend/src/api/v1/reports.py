@@ -2,12 +2,14 @@
 
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, status
 from geoalchemy2 import WKTElement
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.config import settings
 from src.database import get_db
+from src.middleware.security import limiter
 from src.models.media import Media
 from src.models.report import Report
 from src.models.user import User
@@ -110,7 +112,9 @@ async def _load_author_display(user_id: Optional[str], db: AsyncSession) -> Opti
 
 
 @router.post("", response_model=ReportResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit(f"{settings.rate_limit_reports_per_hour}/hour")
 async def create_report(
+    request: Request,
     body: ReportCreate,
     db: AsyncSession = Depends(get_db),
     current_user_id: Optional[str] = Depends(get_optional_user_id),

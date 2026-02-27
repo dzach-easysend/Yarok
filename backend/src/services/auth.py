@@ -1,5 +1,6 @@
 """JWT creation/verification and password hashing."""
 
+import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
@@ -35,7 +36,10 @@ except Exception:
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto", bcrypt__rounds=12)
 
-_DEV_SECRET = "dev-secret-change-in-production"
+# Random fallback secret generated at startup. Unpredictable (unlike a hardcoded string)
+# and invalidates all tokens on restart, which is acceptable for dev.
+# Production deployments must set JWT_PRIVATE_KEY_PEM / JWT_PUBLIC_KEY_PEM.
+_DEV_SECRET = secrets.token_hex(32)
 
 
 def _get_signing_key() -> tuple[str, str]:
@@ -79,6 +83,10 @@ def create_refresh_token(sub: str) -> str:
 def decode_token(token: str) -> Optional[dict[str, Any]]:
     """Decode and verify JWT; return payload or None."""
     key, algorithms = _get_verify_key()
+    # Explicitly reject 'none' algorithm to prevent algorithm confusion attacks
+    algorithms = [a for a in algorithms if a.lower() != "none"]
+    if not algorithms:
+        return None
     try:
         return jwt.decode(token, key, algorithms=algorithms)
     except JWTError:

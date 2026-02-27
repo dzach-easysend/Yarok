@@ -23,7 +23,7 @@ const headerStyles = StyleSheet.create({
 
 const TAB_TITLES: Record<string, string> = {
   index: "מפה",
-  reports: "הדיווחים שלי",
+  reports: "דיווחים",
   settings: "הגדרות",
 };
 

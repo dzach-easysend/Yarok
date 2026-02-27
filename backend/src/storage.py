@@ -1,6 +1,10 @@
 """S3-compatible storage: upload and presigned URLs for private buckets (e.g. Railway)."""
 
+import logging
+
 from src.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 def is_s3_configured() -> bool:
@@ -59,8 +63,8 @@ def delete_file(storage_key: str) -> None:
     if is_s3_configured():
         try:
             _get_s3_client().delete_object(Bucket=settings.s3_bucket, Key=storage_key)
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.error("Failed to delete S3 object %r: %s", storage_key, exc)
         return
     from pathlib import Path
 

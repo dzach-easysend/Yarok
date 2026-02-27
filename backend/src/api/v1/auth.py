@@ -2,11 +2,12 @@
 
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Header, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import get_db
+from src.middleware.security import limiter
 from src.models.user import User
 from src.schemas.user import (
     DeviceRegister,
@@ -25,9 +26,13 @@ from src.services.auth import (
     hash_password,
     verify_password,
 )
-from src.services.password_reset import create_and_send_reset, consume_reset_token
+from src.services.password_reset import consume_reset_token, create_and_send_reset
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+# Pre-computed dummy hash for constant-time comparison when a user doesn't exist,
+# preventing timing-based email enumeration attacks.
+_DUMMY_HASH = hash_password("yarok-timing-prevention-do-not-use")
 
 
 async def get_current_user_id(authorization: Optional[str] = Header(None)) -> Optional[str]:
@@ -41,7 +46,9 @@ async def get_current_user_id(authorization: Optional[str] = Header(None)) -> Op
 
 
 @router.post("/register", response_model=TokenPair)
+@limiter.limit("20/minute")
 async def register(
+    request: Request,
     body: UserRegister,
     db: AsyncSession = Depends(get_db),
 ) -> TokenPair:
@@ -67,14 +74,19 @@ async def register(
 
 
 @router.post("/login", response_model=TokenPair)
+@limiter.limit("20/minute")
 async def login(
+    request: Request,
     body: UserLogin,
     db: AsyncSession = Depends(get_db),
 ) -> TokenPair:
     """Login with email and password."""
     result = await db.execute(select(User).where(User.email == body.email))
     user = result.scalar_one_or_none()
-    if not user or not user.password_hash or not verify_password(body.password, user.password_hash):
+    # Always call verify_password to prevent timing-based email enumeration.
+    hash_to_verify = user.password_hash if (user and user.password_hash) else _DUMMY_HASH
+    password_valid = verify_password(body.password, hash_to_verify)
+    if not user or not user.password_hash or not password_valid:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
     if not user.is_active:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account disabled")
@@ -130,7 +142,9 @@ async def refresh(body: RefreshRequest) -> TokenPair:
 
 
 @router.post("/forgot-password")
+@limiter.limit("20/minute")
 async def forgot_password(
+    request: Request,
     body: ForgotPasswordRequest,
     db: AsyncSession = Depends(get_db),
 ) -> dict:
@@ -157,7 +171,9 @@ async def forgot_password(
 
 
 @router.post("/reset-password")
+@limiter.limit("20/minute")
 async def reset_password(
+    request: Request,
     body: ResetPasswordRequest,
     db: AsyncSession = Depends(get_db),
 ) -> dict:
@@ -173,7 +189,9 @@ async def reset_password(
 
 
 @router.post("/device", response_model=TokenPair)
+@limiter.limit("20/minute")
 async def register_device(
+    request: Request,
     body: DeviceRegister,
     db: AsyncSession = Depends(get_db),
 ) -> TokenPair:

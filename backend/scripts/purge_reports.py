@@ -68,9 +68,7 @@ def main() -> None:
 
         result = await run_purge(dry_run=False)
         print("\nDeleting local media files...")
-        print(
-            f"  Deleted: {result['local_deleted']}  |  Not found: {result['local_missing']}"
-        )
+        print(f"  Deleted: {result['local_deleted']}  |  Not found: {result['local_missing']}")
         if result.get("s3_deleted", 0) > 0:
             print(f"  S3 objects deleted: {result['s3_deleted']}")
         print("\nPurging database rows...")

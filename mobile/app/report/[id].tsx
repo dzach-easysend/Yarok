@@ -138,7 +138,7 @@ export default function ReportDetailScreen() {
         emitEvent("dbg_setQueryData_CRASH");
         // #endregion
       }
-      // Update list caches so My Reports (and any reports list) shows the new status without refetch
+      // Update list caches so Reports screen (and any reports list) shows the new status without refetch
       try {
         queryClient.setQueriesData(
           { queryKey: ["my-reports"] },

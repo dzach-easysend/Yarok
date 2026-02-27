@@ -71,7 +71,6 @@ async def test_purge_reports_missing_secret_returns_403(monkeypatch, admin_secre
 async def test_purge_reports_get_dry_run_success(monkeypatch, admin_secret):
     """GET with correct X-Admin-Secret returns counts (mocked run_purge)."""
     from src.api.v1 import admin
-
     from src.config import settings
 
     monkeypatch.setattr(settings, "admin_secret", admin_secret)
@@ -94,7 +93,6 @@ async def test_purge_reports_get_dry_run_success(monkeypatch, admin_secret):
 async def test_purge_reports_post_success(monkeypatch, admin_secret):
     """POST with correct X-Admin-Secret runs purge and returns result (mocked)."""
     from src.api.v1 import admin
-
     from src.config import settings
 
     monkeypatch.setattr(settings, "admin_secret", admin_secret)

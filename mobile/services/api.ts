@@ -5,8 +5,10 @@
 
 import axios, { type AxiosInstance } from "axios";
 
-const baseURL =
-  process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8000";
+const baseURL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8000";
+if (!process.env.EXPO_PUBLIC_API_URL) {
+  console.warn("[api] EXPO_PUBLIC_API_URL is not set — falling back to http://localhost:8000");
+}
 
 export const api: AxiosInstance = axios.create({
   baseURL,

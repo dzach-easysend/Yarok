@@ -49,6 +49,13 @@ class Settings(BaseSettings):
     # Rate limits
     rate_limit_reports_per_hour: int = 10
     rate_limit_reads_per_minute: int = 100
+    rate_limit_auth_per_minute: int = 20
+    rate_limit_geocode_per_minute: int = 60
+    rate_limit_debug_per_minute: int = 60
+
+    # CORS: comma-separated or JSON list of allowed origins. Defaults to "*" for dev.
+    # In production set e.g. CORS_ORIGINS='["https://myapp.com"]'
+    cors_origins: list[str] = ["*"]
 
     # Debug: accept client logs and write to stdout (for Railway / production debugging)
     debug_client_logs: bool = False
@@ -63,7 +70,8 @@ class Settings(BaseSettings):
     smtp_password: str = ""
     smtp_from: str = "noreply@yarok.app"
     smtp_use_tls: bool = True
-    # Base URL for reset link (e.g. https://myapp.com or expo web URL). Link will be {base}/auth/reset-password?token=...
+    # Base URL for reset link (e.g. https://myapp.com or expo web URL).
+    # Link will be {base}/auth/reset-password?token=...
     password_reset_base_url: str = ""
 
 

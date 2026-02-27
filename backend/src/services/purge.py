@@ -3,7 +3,7 @@
 from pathlib import Path
 from typing import Any
 
-from sqlalchemy import func, select, text
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.config import settings
@@ -114,7 +114,8 @@ async def run_purge(*, dry_run: bool = False) -> dict[str, Any]:
     result["s3_deleted"] = s3_deleted
 
     async with AsyncSessionLocal() as session:
-        await session.execute(text("TRUNCATE TABLE reports CASCADE"))
+        await session.execute(delete(Media))
+        await session.execute(delete(Report))
         await session.commit()
 
     async with AsyncSessionLocal() as session:

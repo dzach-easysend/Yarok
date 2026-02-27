@@ -44,7 +44,7 @@ class TestFABNavigation:
         expect(page.get_by_test_id("screen-create")).to_be_visible()
 
     def test_fab_from_reports_opens_create(self, page):
-        """FAB on My Reports screen opens create report screen."""
+        """FAB on Reports screen opens create report screen."""
         page.get_by_test_id("tab-reports").click()
         expect(page.get_by_test_id("screen-reports")).to_be_visible()
         page.get_by_test_id("fab-create").click()

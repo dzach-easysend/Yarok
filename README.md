@@ -14,6 +14,7 @@ yarok/
     start.sh           # Entrypoint: runs migrations then uvicorn
     railway.toml       # Railway build & deploy config
     src/storage.py     # S3-compatible storage (Railway bucket or local disk)
+    src/api/v1/admin.py  # Admin endpoints (e.g. purge-reports; requires ADMIN_SECRET)
   mobile/              # Expo app (React Native) — iOS, Android, Web
     Dockerfile         # Web production build (Expo export + nginx)
     metro.config.js    # Metro bundler config (web shims, minifier)
@@ -162,6 +163,9 @@ The project deploys to Railway as three services within one project.
 | `S3_BUCKET` | `yarok-media` |
 | `S3_ACCESS_KEY` | (S3 access key) |
 | `S3_SECRET_KEY` | (S3 secret key) |
+| `ADMIN_SECRET` | (optional; set to enable admin purge endpoint `POST /api/v1/admin/purge-reports` with `X-Admin-Secret` header) |
+
+Optional **password reset (forgot password)** email: set `PASSWORD_RESET_BASE_URL` to your web app URL and SMTP variables (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM`, `SMTP_USE_TLS`). See `backend/.env.example`.
 
 **yarok-web** (build argument):
 

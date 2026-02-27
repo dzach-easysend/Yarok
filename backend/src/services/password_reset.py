@@ -2,7 +2,7 @@
 
 import hashlib
 import secrets
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -74,6 +74,7 @@ async def consume_reset_token(db: AsyncSession, raw_token: str, new_password: st
         select(PasswordResetToken)
         .where(PasswordResetToken.token_hash == token_hash)
         .where(PasswordResetToken.expires_at > datetime.now(timezone.utc))
+        .with_for_update()
     )
     prt = result.scalar_one_or_none()
     if not prt:

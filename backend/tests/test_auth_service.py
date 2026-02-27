@@ -5,15 +5,13 @@ from datetime import datetime, timedelta, timezone
 from jose import jwt
 
 from src.services.auth import (
+    _DEV_SECRET as DEV_SECRET,
     create_access_token,
     create_refresh_token,
     decode_token,
     hash_password,
     verify_password,
 )
-
-# ---- Shared constant used by the dev-mode HS256 fallback ----
-DEV_SECRET = "dev-secret-change-in-production"
 
 
 # ---------------------------------------------------------------------------

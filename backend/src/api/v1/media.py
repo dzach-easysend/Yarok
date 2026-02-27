@@ -2,8 +2,9 @@
 
 import uuid
 from pathlib import Path
+from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, Header, HTTPException, UploadFile, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,6 +12,7 @@ from src.config import settings
 from src.database import get_db
 from src.models.media import Media
 from src.models.report import Report
+from src.services.auth import decode_token
 from src.storage import delete_file, is_s3_configured, media_url, upload_to_s3
 
 router = APIRouter(prefix="/reports", tags=["media"])
@@ -26,6 +28,18 @@ ALLOWED_CONTENT_TYPES = {
 }
 
 MAX_FILE_SIZE = 20 * 1024 * 1024  # 20 MB
+
+
+async def _get_optional_user_id(
+    authorization: Optional[str] = Header(None),
+) -> Optional[str]:
+    """Extract user_id from Bearer token; returns None if absent/invalid."""
+    if not authorization or not authorization.startswith("Bearer "):
+        return None
+    payload = decode_token(authorization[7:])
+    if not payload:
+        return None
+    return payload.get("sub")
 
 
 def _get_upload_dir() -> Path:
@@ -52,12 +66,25 @@ async def upload_media(
     report_id: str,
     file: UploadFile,
     db: AsyncSession = Depends(get_db),
+    current_user_id: Optional[str] = Depends(_get_optional_user_id),
 ) -> dict:
-    """Upload a media file (photo/video) for a report."""
+    """Upload a media file (photo/video) for a report. Requires auth and ownership."""
+    if not current_user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required",
+        )
+
     result = await db.execute(select(Report).where(Report.id == report_id))
     report = result.scalar_one_or_none()
     if not report:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")
+
+    if report.user_id and str(report.user_id) != current_user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the report owner can upload media",
+        )
 
     content_type = file.content_type or ""
     if content_type not in ALLOWED_CONTENT_TYPES:
@@ -147,8 +174,26 @@ async def delete_media(
     report_id: str,
     media_id: str,
     db: AsyncSession = Depends(get_db),
+    current_user_id: Optional[str] = Depends(_get_optional_user_id),
 ) -> None:
     """Delete a media item. Only allowed if report has more than one media (cannot delete last)."""
+    if not current_user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required",
+        )
+
+    report_result = await db.execute(select(Report).where(Report.id == report_id))
+    report = report_result.scalar_one_or_none()
+    if not report:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")
+
+    if report.user_id and str(report.user_id) != current_user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the report owner can delete media",
+        )
+
     stmt = select(Media).where(
         Media.id == media_id,
         Media.report_id == report_id,
