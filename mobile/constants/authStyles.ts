@@ -30,5 +30,7 @@ export const authStyles = StyleSheet.create({
   },
   primaryBtnText: { fontSize: 16, fontWeight: "600", color: colors.white, textAlign: "right" },
   errorText: { color: colors.error, fontSize: 13, textAlign: "right" },
+  successText: { color: colors.text, fontSize: 15, textAlign: "right", marginBottom: 8 },
+  hintText: { color: colors.muted, fontSize: 14, textAlign: "right", marginBottom: 4 },
   link: { color: colors.primary, textAlign: "right", marginTop: 16 },
 });

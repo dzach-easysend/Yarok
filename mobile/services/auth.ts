@@ -197,3 +197,27 @@ export async function isLoggedIn(): Promise<boolean> {
   const token = await getItem(TOKEN_KEY);
   return !!token;
 }
+
+/**
+ * Request a password reset link sent to the given email.
+ * Backend always returns 200 with a generic message (no email enumeration).
+ * Throws on 503 (feature not configured) or network error.
+ */
+export async function requestPasswordReset(email: string): Promise<{ message: string }> {
+  const { data } = await api.post<{ message: string }>("/api/v1/auth/forgot-password", {
+    email,
+  });
+  return data;
+}
+
+/**
+ * Set a new password using the token from the reset email link.
+ * Throws on 400 (invalid/expired token) or network error.
+ */
+export async function resetPassword(token: string, newPassword: string): Promise<{ message: string }> {
+  const { data } = await api.post<{ message: string }>("/api/v1/auth/reset-password", {
+    token,
+    new_password: newPassword,
+  });
+  return data;
+}

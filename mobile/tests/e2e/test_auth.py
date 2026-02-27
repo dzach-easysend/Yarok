@@ -27,6 +27,7 @@ class TestRegister:
 
         page.get_by_test_id("input-register-email").fill(email)
         page.get_by_test_id("input-register-password").fill("TestPass123")
+        page.get_by_test_id("input-register-password-confirm").fill("TestPass123")
         page.get_by_test_id("input-register-name").fill("E2E Tester")
         page.get_by_test_id("btn-register-submit").click()
 
@@ -45,6 +46,7 @@ class TestRegister:
 
         page.get_by_test_id("input-register-email").fill(email)
         page.get_by_test_id("input-register-password").fill("AnyPass123")
+        page.get_by_test_id("input-register-password-confirm").fill("AnyPass123")
         page.get_by_test_id("btn-register-submit").click()
 
         # Should show error, stay on register screen

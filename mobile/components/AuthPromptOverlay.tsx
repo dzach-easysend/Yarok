@@ -15,7 +15,9 @@ import {
   KeyboardAvoidingView,
   ScrollView,
 } from "react-native";
+import { useRouter } from "expo-router";
 import { useAuth } from "@/contexts/AuthContext";
+import PasswordInput from "@/components/PasswordInput";
 import { authStyles } from "@/constants/authStyles";
 import { colors, spacing, radii } from "@/constants/theme";
 
@@ -28,10 +30,12 @@ interface Props {
 type Tab = "login" | "register";
 
 export default function AuthPromptOverlay({ visible, onSuccess, onDismiss }: Props) {
+  const router = useRouter();
   const { login, register } = useAuth();
   const [tab, setTab] = useState<Tab>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -56,6 +60,10 @@ export default function AuthPromptOverlay({ visible, onSuccess, onDismiss }: Pro
 
   const handleRegister = async () => {
     setError(null);
+    if (password !== passwordConfirm) {
+      setError("הסיסמאות אינן תואמות");
+      return;
+    }
     setLoading(true);
     try {
       await register(email, password, displayName || null);
@@ -123,22 +131,28 @@ export default function AuthPromptOverlay({ visible, onSuccess, onDismiss }: Pro
             value={email}
             onChangeText={setEmail}
           />
-          <TextInput
+          <PasswordInput
             style={authStyles.input}
             placeholder="סיסמה"
-            placeholderTextColor={colors.muted}
-            secureTextEntry
             value={password}
             onChangeText={setPassword}
           />
           {tab === "register" ? (
-            <TextInput
-              style={authStyles.input}
-              placeholder="שם (אופציונלי)"
-              placeholderTextColor={colors.muted}
-              value={displayName}
-              onChangeText={setDisplayName}
-            />
+            <>
+              <PasswordInput
+                style={authStyles.input}
+                placeholder="הקלד שוב לאימות"
+                value={passwordConfirm}
+                onChangeText={setPasswordConfirm}
+              />
+              <TextInput
+                style={authStyles.input}
+                placeholder="שם (אופציונלי)"
+                placeholderTextColor={colors.muted}
+                value={displayName}
+                onChangeText={setDisplayName}
+              />
+            </>
           ) : null}
           {error ? <Text style={authStyles.errorText}>{error}</Text> : null}
           <TouchableOpacity
@@ -154,6 +168,16 @@ export default function AuthPromptOverlay({ visible, onSuccess, onDismiss }: Pro
               </Text>
             )}
           </TouchableOpacity>
+          {tab === "login" ? (
+            <TouchableOpacity
+              onPress={() => {
+                onDismiss();
+                router.push("/auth/forgot-password");
+              }}
+            >
+              <Text style={[authStyles.link, { marginTop: 8 }]}>שכחתי סיסמה?</Text>
+            </TouchableOpacity>
+          ) : null}
         </ScrollView>
 
         <TouchableOpacity style={styles.dismissLink} onPress={onDismiss}>

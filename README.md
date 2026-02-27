@@ -75,7 +75,7 @@ npx expo run:android              # Android (requires prebuild)
 
 ### Environment
 
-- **Backend**: See `backend/.env.example` (PostgreSQL, Redis, S3, JWT keys, encryption key).
+- **Backend**: See `backend/.env.example` (PostgreSQL, Redis, S3, JWT keys, encryption key, optional password-reset SMTP and `PASSWORD_RESET_BASE_URL`).
 - **Mobile**: See `mobile/.env.example` (API URL).
 
 ## Development
@@ -111,7 +111,7 @@ python scripts/purge_reports.py --force    # skip confirmation prompt
 python scripts/purge_reports.py --dry-run  # show counts only, no changes
 ```
 
-The script deletes local media files under `uploads/`, removes S3 objects if S3 is configured, then `TRUNCATE`s the `reports` table (cascading to `media`). **On Railway:** see [docs/RAILWAY_PURGE_DATABASE.md](docs/RAILWAY_PURGE_DATABASE.md) for purging the deployed database (e.g. before a demo).
+The script deletes local media files under `uploads/`, removes S3 objects if S3 is configured, then `TRUNCATE`s the `reports` table (cascading to `media`). **On Railway:** the cleanest way is the **admin API**: set `ADMIN_SECRET` on yarok-api and `POST /api/v1/admin/purge-reports` with header `X-Admin-Secret` (no DB URL or TCP Proxy needed). See [docs/RAILWAY_PURGE_DATABASE.md](docs/RAILWAY_PURGE_DATABASE.md) for all options (admin API, script, or full DB wipe).
 
 ### E2E (backend + Expo web must be running)
 

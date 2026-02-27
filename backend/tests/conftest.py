@@ -269,3 +269,18 @@ def make_execute_result(
         result.scalars.return_value = scalars_mock
 
     return result
+
+
+def make_password_reset_token(
+    *,
+    id: Optional[str] = None,
+    user_id: str,
+):
+    """Return a SimpleNamespace that quacks like a PasswordResetToken ORM object."""
+    return SimpleNamespace(
+        id=id or str(uuid4()),
+        user_id=user_id,
+        token_hash="hashed",
+        expires_at=datetime.now(timezone.utc),
+        created_at=datetime.now(timezone.utc),
+    )

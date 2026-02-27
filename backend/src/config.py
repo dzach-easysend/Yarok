@@ -53,5 +53,18 @@ class Settings(BaseSettings):
     # Debug: accept client logs and write to stdout (for Railway / production debugging)
     debug_client_logs: bool = False
 
+    # Admin: secret for admin endpoints (e.g. purge). When set, send X-Admin-Secret.
+    admin_secret: Optional[str] = None
+
+    # Password reset (forgot password) email
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from: str = "noreply@yarok.app"
+    smtp_use_tls: bool = True
+    # Base URL for reset link (e.g. https://myapp.com or expo web URL). Link will be {base}/auth/reset-password?token=...
+    password_reset_base_url: str = ""
+
 
 settings = Settings()

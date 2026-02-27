@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import ScreenHeader from "@/components/ScreenHeader";
+import PasswordInput from "@/components/PasswordInput";
 import { authStyles as styles } from "@/constants/authStyles";
 import { colors } from "@/constants/theme";
 
@@ -42,12 +43,9 @@ export default function LoginScreen() {
           value={email}
           onChangeText={setEmail}
         />
-        <TextInput
+        <PasswordInput
           testID="input-login-password"
-          style={styles.input}
           placeholder="סיסמה"
-          placeholderTextColor="#8b9cb8"
-          secureTextEntry
           value={password}
           onChangeText={setPassword}
         />
@@ -63,6 +61,12 @@ export default function LoginScreen() {
           ) : (
             <Text style={styles.primaryBtnText}>התחבר</Text>
           )}
+        </TouchableOpacity>
+        <TouchableOpacity
+          testID="link-forgot-password"
+          onPress={() => router.push("/auth/forgot-password")}
+        >
+          <Text style={styles.link}>שכחתי סיסמה?</Text>
         </TouchableOpacity>
         <TouchableOpacity testID="link-goto-register" onPress={() => router.replace("/auth/register")}>
           <Text style={styles.link}>אין חשבון? הירשם</Text>

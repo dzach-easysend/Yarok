@@ -33,6 +33,19 @@ class RefreshRequest(BaseModel):
     refresh_token: str
 
 
+class ForgotPasswordRequest(BaseModel):
+    """Forgot password: send reset link to this email."""
+
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    """Reset password with token from email link."""
+
+    token: str
+    new_password: str
+
+
 class TokenPair(BaseModel):
     """Access and refresh tokens; login/register also return user info."""
 

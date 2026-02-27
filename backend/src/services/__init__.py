@@ -1,1 +1,1 @@
-"""Business logic services."""
+"""Shared business logic (e.g. purge)."""

@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import ScreenHeader from "@/components/ScreenHeader";
+import PasswordInput from "@/components/PasswordInput";
 import { authStyles as styles } from "@/constants/authStyles";
 import { colors } from "@/constants/theme";
 
@@ -11,12 +12,17 @@ export default function RegisterScreen() {
   const { register } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const handleRegister = async () => {
     setError(null);
+    if (password !== passwordConfirm) {
+      setError("הסיסמאות אינן תואמות");
+      return;
+    }
     setLoading(true);
     try {
       await register(email, password, displayName || null);
@@ -43,14 +49,17 @@ export default function RegisterScreen() {
           value={email}
           onChangeText={setEmail}
         />
-        <TextInput
+        <PasswordInput
           testID="input-register-password"
-          style={styles.input}
           placeholder="סיסמה"
-          placeholderTextColor="#8b9cb8"
-          secureTextEntry
           value={password}
           onChangeText={setPassword}
+        />
+        <PasswordInput
+          testID="input-register-password-confirm"
+          placeholder="הקלד שוב לאימות"
+          value={passwordConfirm}
+          onChangeText={setPasswordConfirm}
         />
         <TextInput
           testID="input-register-name"

@@ -5,7 +5,12 @@ from uuid import uuid4
 import pytest
 
 from src.services.auth import create_access_token, create_refresh_token, hash_password
-from tests.conftest import auth_headers, make_execute_result, make_user
+from tests.conftest import (
+    auth_headers,
+    make_execute_result,
+    make_password_reset_token,
+    make_user,
+)
 
 # ---------------------------------------------------------------------------
 # POST /api/v1/auth/register
@@ -369,3 +374,99 @@ class TestGetMe:
 
         assert resp.status_code == 401
         assert "not found" in resp.json()["detail"].lower()
+
+
+# ---------------------------------------------------------------------------
+# POST /api/v1/auth/forgot-password
+# ---------------------------------------------------------------------------
+
+
+class TestForgotPassword:
+    """Tests for the forgot-password endpoint."""
+
+    @pytest.mark.asyncio
+    async def test_forgot_password_not_configured(self, client, mock_db, monkeypatch):
+        from src import config
+
+        monkeypatch.setattr(config.settings, "password_reset_base_url", "")
+        monkeypatch.setattr(config.settings, "smtp_host", "")
+
+        resp = await client.post(
+            "/api/v1/auth/forgot-password",
+            json={"email": "user@example.com"},
+        )
+        assert resp.status_code == 503
+        assert "not configured" in resp.json()["detail"].lower()
+
+    @pytest.mark.asyncio
+    async def test_forgot_password_success(self, client, mock_db, monkeypatch):
+        from unittest import mock
+
+        from src import config
+
+        monkeypatch.setattr(config.settings, "password_reset_base_url", "https://app.example.com")
+        monkeypatch.setattr(config.settings, "smtp_host", "smtp.example.com")
+
+        with mock.patch("src.api.v1.auth.create_and_send_reset", new_callable=mock.AsyncMock):
+            resp = await client.post(
+                "/api/v1/auth/forgot-password",
+                json={"email": "user@example.com"},
+            )
+        assert resp.status_code == 200
+        assert "message" in resp.json()
+
+    @pytest.mark.asyncio
+    async def test_forgot_password_invalid_email(self, client, mock_db, monkeypatch):
+        from src import config
+
+        monkeypatch.setattr(config.settings, "password_reset_base_url", "https://app.example.com")
+        monkeypatch.setattr(config.settings, "smtp_host", "smtp.example.com")
+
+        resp = await client.post(
+            "/api/v1/auth/forgot-password",
+            json={"email": "not-an-email"},
+        )
+        assert resp.status_code == 422
+
+
+# ---------------------------------------------------------------------------
+# POST /api/v1/auth/reset-password
+# ---------------------------------------------------------------------------
+
+
+class TestResetPassword:
+    """Tests for the reset-password endpoint."""
+
+    @pytest.mark.asyncio
+    async def test_reset_password_invalid_token(self, client, mock_db):
+        mock_db.execute.return_value = make_execute_result(scalar_one_or_none_value=None)
+
+        resp = await client.post(
+            "/api/v1/auth/reset-password",
+            json={"token": "invalid-or-expired", "new_password": "NewPass123!"},
+        )
+        assert resp.status_code == 400
+        detail = resp.json()["detail"].lower()
+        assert "invalid" in detail or "expired" in detail
+
+    @pytest.mark.asyncio
+    async def test_reset_password_success(self, client, mock_db):
+        user_id = str(uuid4())
+        user = make_user(id=user_id, email="u@example.com", password_hash="old_hash")
+        prt = make_password_reset_token(user_id=user_id)
+        mock_db.execute.side_effect = [
+            make_execute_result(scalar_one_or_none_value=prt),
+            make_execute_result(scalar_one_or_none_value=user),
+        ]
+
+        resp = await client.post(
+            "/api/v1/auth/reset-password",
+            json={"token": "any-raw-token", "new_password": "NewPass123!"},
+        )
+        assert resp.status_code == 200
+        assert "password" in resp.json()["message"].lower()
+
+    @pytest.mark.asyncio
+    async def test_reset_password_missing_fields(self, client, mock_db):
+        resp = await client.post("/api/v1/auth/reset-password", json={"token": "abc"})
+        assert resp.status_code == 422

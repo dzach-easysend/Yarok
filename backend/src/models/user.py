@@ -30,3 +30,8 @@ class User(Base, TimestampMixin):
 
     reports = relationship("Report", back_populates="user", foreign_keys="Report.user_id")
     subscriptions = relationship("Subscription", back_populates="user")
+    password_reset_tokens = relationship(
+        "PasswordResetToken",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )

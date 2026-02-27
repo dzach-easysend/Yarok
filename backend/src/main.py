@@ -9,7 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
-from src.api.v1 import auth, debug, geocode, media, reports
+from src.api.v1 import admin, auth, debug, geocode, media, reports
 from src.config import settings
 from src.middleware.security import limiter, setup_middleware
 
@@ -35,6 +35,7 @@ app.include_router(reports.router, prefix="/api/v1")
 app.include_router(media.router, prefix="/api/v1")
 app.include_router(geocode.router, prefix="/api/v1")
 app.include_router(debug.router, prefix="/api/v1")
+app.include_router(admin.router, prefix="/api/v1")
 
 _upload_dir = Path(settings.media_upload_dir)
 if not _upload_dir.is_absolute():

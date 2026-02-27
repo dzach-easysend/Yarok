@@ -9,7 +9,14 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
 from src.config import settings
-from src.models import Media, NotificationLog, Report, Subscription, User  # noqa: F401
+from src.models import (
+    Media,
+    NotificationLog,
+    PasswordResetToken,
+    Report,
+    Subscription,
+    User,
+)  # noqa: F401
 from src.models.base import Base
 
 config = context.config

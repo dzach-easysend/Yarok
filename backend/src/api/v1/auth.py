@@ -10,8 +10,10 @@ from src.database import get_db
 from src.models.user import User
 from src.schemas.user import (
     DeviceRegister,
+    ForgotPasswordRequest,
     MeResponse,
     RefreshRequest,
+    ResetPasswordRequest,
     TokenPair,
     UserLogin,
     UserRegister,
@@ -23,6 +25,7 @@ from src.services.auth import (
     hash_password,
     verify_password,
 )
+from src.services.password_reset import create_and_send_reset, consume_reset_token
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -124,6 +127,49 @@ async def refresh(body: RefreshRequest) -> TokenPair:
         access_token=create_access_token(sub),
         refresh_token=create_refresh_token(sub),
     )
+
+
+@router.post("/forgot-password")
+async def forgot_password(
+    body: ForgotPasswordRequest,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """
+    Request a password reset link by email.
+    Always returns 200 with the same message (no email enumeration).
+    Returns 503 if email/SMTP or PASSWORD_RESET_BASE_URL not configured.
+    """
+    from src.config import settings
+
+    if not settings.password_reset_base_url or not settings.smtp_host:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Password reset is not configured",
+        )
+    try:
+        await create_and_send_reset(db, body.email)
+    except RuntimeError:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Password reset is not configured",
+        )
+    return {"message": "If an account exists with this email, a reset link was sent."}
+
+
+@router.post("/reset-password")
+async def reset_password(
+    body: ResetPasswordRequest,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Set a new password using the token from the reset email."""
+    try:
+        await consume_reset_token(db, body.token, body.new_password)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
+    return {"message": "Password updated. You can log in with your new password."}
 
 
 @router.post("/device", response_model=TokenPair)
